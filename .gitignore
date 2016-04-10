@@ -1,0 +1,14 @@
+/Projects/Keil/Objects/*.crf
+/Projects/Keil/Objects/*.d
+/Projects/Keil/Objects/*.o
+/Projects/Keil/Objects/*.axf
+/Projects/Keil/Objects/*.htm
+/Projects/Keil/Objects/*.lnp
+/Projects/Keil/Objects/*.dep
+/Projects/Keil/Objects/*.iex
+/Projects/Keil/Listings/*.lst
+/Projects/Keil/Listings/*.map
+/Projects/Keil/Release/*.bin
+/Projects/Keil/*.Diamond
+/.settings
+/Projects/Keil/Objects/*.sct
