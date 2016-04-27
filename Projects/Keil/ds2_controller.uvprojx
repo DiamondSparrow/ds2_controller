@@ -464,6 +464,26 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>APP/Servo</GroupName>
+          <Files>
+            <File>
+              <FileName>servo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\servo\servo.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>APP/Ultrasonic</GroupName>
+          <Files>
+            <File>
+              <FileName>ultrasonic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\ultrasonic\ultrasonic.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>BSP</GroupName>
           <Files>
             <File>
@@ -475,6 +495,11 @@
               <FileName>gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\BSP\gpio.c</FilePath>
+            </File>
+            <File>
+              <FileName>pwm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\pwm.c</FilePath>
             </File>
             <File>
               <FileName>uart.c</FileName>

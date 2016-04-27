@@ -51,9 +51,11 @@ typedef struct
  *********************************************************************************************************************/
 gpio_item_t gpio_list[GPIO_LAST] =
 {
-    {.port = 0, .pin =  25, .dir = true, .state = false,},
-    {.port = 0, .pin =  3,  .dir = true, .state = false,},
-    {.port = 1, .pin =  1,  .dir = true, .state = false,},
+    {.port = 0, .pin =  25, .dir = true,  .state = false,},
+    {.port = 0, .pin =  3,  .dir = true,  .state = false,},
+    {.port = 1, .pin =  1,  .dir = true,  .state = false,},
+    {.port = 1, .pin =  9,  .dir = true,  .state = false,},
+    {.port = 1, .pin =  10, .dir = false, .state = false,},
 };
 /**********************************************************************************************************************
  * Exported variables
@@ -93,7 +95,7 @@ void gpio_output(gpio_t gpio)
 
 void gpio_output_set(gpio_t gpio, bool state)
 {
-    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin, gpio_list[gpio].state);
+    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin, state);
 
     return;
 }
@@ -114,7 +116,6 @@ void gpio_output_high(gpio_t gpio)
 
 void gpio_input(gpio_t gpio)
 {
-
     Chip_GPIO_SetPinDIRInput(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
 
     return;

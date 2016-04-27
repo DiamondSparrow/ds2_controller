@@ -1,9 +1,9 @@
 /**
  **********************************************************************************************************************
- * @file        cli_cmd.h
+ * @file        servo.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-04-10
+ * @date        2016-04-13
  * @brief       This is C header file template.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef CLI_CMD_H_
-#define CLI_CMD_H_
+#ifndef SERVO_H_
+#define SERVO_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +33,10 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
+#define SERVO_ANGLE_MIN     (-90)
+#define SERVO_ANGLE_ZERO    (0)
+#define SERVO_ANGLE_MAX     (+90)
+#define SERVO_ANGLE_INVERT  1
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -41,6 +45,12 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+typedef enum
+{
+    SERVO_ID_PAN    = 0,
+    SERVO_ID_TILT   = 1,
+    SERVO_ID_LAST,
+} servo_id_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -49,15 +59,13 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void cli_cmd_register(void);
-
-bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd);
+bool servo_init(void);
+bool servo_set(servo_id_t id, int8_t angle);
+void servo_set_all(int8_t pan_angle, int8_t tilt_angle);
+void servo_test(servo_id_t id);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLI_CMD_H_ */
+#endif /* SERVO_H_ */

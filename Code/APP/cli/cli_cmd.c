@@ -21,6 +21,7 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -29,8 +30,9 @@
 #include "cli.h"
 
 #include "debug.h"
-#include "bsp.h"
+#include "servo/servo.h"
 #include "common.h"
+#include "bsp.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -61,6 +63,20 @@ const cli_cmd_t cli_cmd_info =
     cli_cmd_info_cb,
     0,
 };
+const cli_cmd_t cli_cmd_servo =
+{
+    (const uint8_t *)"servo",
+    (const uint8_t *)"servo $servo %action $angle: Control servo.",
+    cli_cmd_servo_cb,
+    3,
+};
+const cli_cmd_t cli_cmd_pointer =
+{
+    (const uint8_t *)"pointer",
+    (const uint8_t *)"pointer $pan %$tilt $angle: Control pointer.",
+    cli_cmd_pointer_cb,
+    2,
+};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -82,6 +98,8 @@ void cli_cmd_register(void)
 {
     cli_register_cmd((const cli_cmd_t *)&cli_cmd_help);
     cli_register_cmd((const cli_cmd_t *)&cli_cmd_info);
+    cli_register_cmd((const cli_cmd_t *)&cli_cmd_servo);
+    cli_register_cmd((const cli_cmd_t *)&cli_cmd_pointer);
 
     return;
 }
@@ -113,6 +131,91 @@ bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd)
     DEBUG("Build ....... %s %s", __DATE__, __TIME__);
     DEBUG("Core Clock .. %ld MHz.", SystemCoreClock);
 
+    return false;
+}
+
+bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd)
+{
+    uint8_t ptr_size = 0;
+    uint8_t *ptr = NULL;
+    servo_id_t servo_id = SERVO_ID_LAST;
+    int8_t angle = 0;
+
+    // Check $servo parameter.
+    if((ptr = (uint8_t *)cli_get_parameter(cmd, 1, &ptr_size)) == NULL)
+    {
+        return false;
+    }
+    if(memcmp(ptr, "pan", ptr_size) == 0)
+    {
+        servo_id = SERVO_ID_PAN;
+    }
+    if(memcmp(ptr, "tilt", ptr_size) == 0)
+    {
+        servo_id = SERVO_ID_TILT;
+    }
+
+    if(servo_id == SERVO_ID_LAST)
+    {
+        return false;
+    }
+
+    // Check $action parameter
+    if((ptr = (uint8_t *)cli_get_parameter(cmd, 2, &ptr_size)) == NULL)
+    {
+        return false;
+    }
+    if(memcmp(ptr, "test", ptr_size) == 0)
+    {
+        DEBUG("Testing servo %d...", servo_id);
+        servo_test(servo_id);
+        DEBUG("Testing servo %d is done.", servo_id);
+        return false;
+    }
+
+    if(memcmp(ptr, "set", ptr_size) != 0)
+    {
+        return false;
+    }
+
+    // Check $angle parameter
+    if((ptr = (uint8_t *)cli_get_parameter(cmd, 3, &ptr_size)) == NULL)
+    {
+        return false;
+    }
+    angle = atoi((char *)ptr);
+    if(servo_set(servo_id, angle) == true)
+    {
+        DEBUG("Servo %d angle set to %d deg.", servo_id, angle);
+    }
+    else
+    {
+        DEBUG("Servo %d angle set to %d deg.failed.", servo_id, angle);
+    }
+
+    return false;
+}
+
+bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd)
+{
+    int8_t pan = 0;
+    int8_t tilt = 0;
+    uint8_t ptr_size = 0;
+    uint8_t *ptr = NULL;
+
+    if((ptr = (uint8_t *)cli_get_parameter(cmd, 1, &ptr_size)) == NULL)
+    {
+        return false;
+    }
+    pan = atoi((char *)ptr);
+    if((ptr = (uint8_t *)cli_get_parameter(cmd, 2, &ptr_size)) == NULL)
+    {
+        return false;
+    }
+    tilt = atoi((char *)ptr);
+    servo_set(SERVO_ID_PAN, pan);
+    servo_set(SERVO_ID_TILT, tilt);
+    DEBUG("Pointer %d %d.", pan, tilt);
 
     return false;
 }

@@ -1,9 +1,9 @@
 /**
  **********************************************************************************************************************
- * @file         uart.c
+ * @file         servo.c
  * @author       Diamond Sparrow
  * @version      1.0.0.0
- * @date         2016-04-10
+ * @date         2016-04-13
  * @brief        This is C source file template.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
@@ -21,10 +21,13 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "chip.h"
+#include "cmsis_os.h"
 
-#include "uart.h"
+#include "servo.h"
+#include "bsp.h"
+#include "debug.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -37,15 +40,22 @@
 /**********************************************************************************************************************
  * Private typedef
  *********************************************************************************************************************/
+typedef struct
+{
+    pwm_id_t pwm;   //!< ID of PWM channel.
+    uint32_t min;   //!< PWM duty cycle at -90 degrees.
+    uint32_t zero;  //!< PWM duty cycle at 0 degrees.
+    uint32_t max;   //!< PWM duty cycle at +90 degrees.
+} servo_config_t;
 
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/* Transmit and receive ring buffers */
-__IO RINGBUFF_T uart0_tx_rb;
-__IO RINGBUFF_T uart0_rx_rb;
-uint8_t uart_0_rx_buffer[UART_0_RX_BUFFER_SIZE];
-uint8_t uart_0_tx_buffer[UART_0_TX_BUFFER_SIZE];
+static const servo_config_t servo_config[SERVO_ID_LAST] =
+{
+    {.pwm = PWM_ID_PAN,  .min = 54000, .zero = 108000, .max = 162000},
+    {.pwm = PWM_ID_TILT, .min = 54000, .zero = 108000, .max = 162000},
+};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -58,67 +68,95 @@ uint8_t uart_0_tx_buffer[UART_0_TX_BUFFER_SIZE];
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-void uart_0_init(void)
-{
-    /* Disables pullups/pulldowns and enable digitial mode */
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 13, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 18, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-
-    /* UART signal muxing via SWM */
-    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_UART0);
-    Chip_SWM_MovablePortPinAssign(SWM_UART0_RXD_I, 0, 13);
-    Chip_SWM_MovablePortPinAssign(SWM_UART0_TXD_O, 0, 18);
-
-    /* Use main clock rate as base for UART baud rate divider */
-    Chip_Clock_SetUARTBaseClockRate(Chip_Clock_GetMainClockRate(), false);
-
-    /* Setup UART */
-    Chip_UART_Init(LPC_USART0);
-    Chip_UART_ConfigData(LPC_USART0, UART_CFG_DATALEN_8 | UART_CFG_PARITY_NONE | UART_CFG_STOPLEN_1);
-    Chip_UART_SetBaud(LPC_USART0, UART_0_BAUDRATE);
-    Chip_UART_Enable(LPC_USART0);
-    Chip_UART_TXEnable(LPC_USART0);
-
-    /* Before using the ring buffers, initialize them using the ring buffer init function */
-    RingBuffer_Init((RINGBUFF_T *)&uart0_rx_rb, uart_0_rx_buffer, 1, UART_0_RX_BUFFER_SIZE);
-    RingBuffer_Init((RINGBUFF_T *)&uart0_tx_rb, uart_0_tx_buffer, 1, UART_0_TX_BUFFER_SIZE);
-
-    /* Enable receive data and line status interrupt */
-    Chip_UART_IntEnable(LPC_USART0, UART_INTEN_RXRDY);
-    Chip_UART_IntDisable(LPC_USART0, UART_INTEN_TXRDY); /* May not be needed */
-
-    /* Enable UART interrupt */
-    NVIC_EnableIRQ(UART0_IRQn);
-
-    return;
-}
-
-void uart_0_send(uint8_t *data, uint32_t size)
-{
-    Chip_UART_SendBlocking(LPC_USART0, data, size);
-
-    return;
-}
-
-void uart_0_send_rb(uint8_t *data, uint32_t size)
-{
-    Chip_UART_SendRB(LPC_USART0, (RINGBUFF_T *)&uart0_tx_rb, data, size);
-
-    return;
-}
-
-uint32_t uart_0_read_rb(uint8_t *data, uint32_t size)
-{
-    return Chip_UART_ReadRB(LPC_USART0, (RINGBUFF_T *)&uart0_rx_rb, data, size);
-}
-
-void UART0_IRQHandler(void)
-{
-    Chip_UART_IRQRBHandler(LPC_USART0, (RINGBUFF_T *)&uart0_rx_rb, (RINGBUFF_T *)&uart0_tx_rb);
-
-    return;
-}
 
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+bool servo_init(void)
+{
+    uint8_t i = 0;
+
+    for(i = 0; i < SERVO_ID_LAST; i++)
+    {
+        servo_set((servo_id_t)i, 0);
+    }
+
+    return true;
+}
+
+bool servo_set(servo_id_t id, int8_t angle)
+{
+    int32_t duty_cycle = 0;
+
+    if(angle < SERVO_ANGLE_MIN || angle > SERVO_ANGLE_MAX)
+    {
+        return false;
+    }
+
+#if SERVO_ANGLE_INVERT
+    angle *= (-1);
+#endif
+
+    if(angle >= SERVO_ANGLE_MIN && angle < SERVO_ANGLE_ZERO)
+    {
+        duty_cycle = (servo_config[id].zero - servo_config[id].min);
+        duty_cycle *= angle;
+        duty_cycle /= 90;
+        duty_cycle = (servo_config[id].zero + duty_cycle);
+    }
+    else if (angle > SERVO_ANGLE_ZERO && angle <= SERVO_ANGLE_MAX)
+    {
+        duty_cycle = (servo_config[id].max - servo_config[id].zero);
+        duty_cycle *= angle;
+        duty_cycle /= 90;
+        duty_cycle = (servo_config[id].zero + duty_cycle);
+    }
+    else
+    {
+        duty_cycle = servo_config[id].zero;
+    }
+
+    if(duty_cycle > servo_config[id].max)
+    {
+        duty_cycle = servo_config[id].max;
+    }
+    if(duty_cycle < servo_config[id].min)
+    {
+        duty_cycle = servo_config[id].min;
+    }
+
+    pwm_set(servo_config[id].pwm, (uint32_t)duty_cycle);
+    osDelay(10);
+    pwm_set(servo_config[id].pwm, 0);
+
+    return true;
+}
+
+void servo_set_all(int8_t pan_angle, int8_t tilt_angle)
+{
+    servo_set(SERVO_ID_PAN, pan_angle);
+    servo_set(SERVO_ID_TILT, tilt_angle);
+
+    return;
+}
+
+void servo_test(servo_id_t id)
+{
+    int8_t i = 0;
+
+    for(i = SERVO_ANGLE_MIN; i <= SERVO_ANGLE_MAX; i++)
+    {
+        servo_set((servo_id_t)id, i);
+        osDelay(5);
+    }
+
+    for(i = SERVO_ANGLE_MAX; i >= SERVO_ANGLE_MIN; i--)
+    {
+        servo_set((servo_id_t)id, i);
+        osDelay(5);
+    }
+
+    servo_set((servo_id_t)id, 0);
+
+    return;
+}

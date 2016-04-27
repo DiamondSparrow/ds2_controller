@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file         uart.c
+ * @file         ultrasonic.c
  * @author       Diamond Sparrow
  * @version      1.0.0.0
- * @date         2016-04-10
- * @brief        This is C source file template.
+ * @date         2016-04-14
+ * @brief        Ultrasonic (HC SR-04) C source file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -21,10 +21,13 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "chip.h"
+#include "cmsis_os.h"
+#include "bsp.h"
 
-#include "uart.h"
+#include "ultrasonic.h"
+#include "debug.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -37,15 +40,20 @@
 /**********************************************************************************************************************
  * Private typedef
  *********************************************************************************************************************/
+typedef struct
+{
+    gpio_t triger;
+    gpio_t echo;
+    uint32_t range;
+} ultrasonic_t;
 
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/* Transmit and receive ring buffers */
-__IO RINGBUFF_T uart0_tx_rb;
-__IO RINGBUFF_T uart0_rx_rb;
-uint8_t uart_0_rx_buffer[UART_0_RX_BUFFER_SIZE];
-uint8_t uart_0_tx_buffer[UART_0_TX_BUFFER_SIZE];
+ultrasonic_t ultrasonic_list[ULTRASONIC_ID_LAST] =
+{
+    {GPIO_ULTRASONIC_1_TRIGER, GPIO_ULTRASONIC_1_ECHO, 0},
+};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -54,71 +62,92 @@ uint8_t uart_0_tx_buffer[UART_0_TX_BUFFER_SIZE];
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
+static void ultrasonic_delay_us(uint32_t count);
 
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-void uart_0_init(void)
+bool ultrasonic_init(void)
 {
-    /* Disables pullups/pulldowns and enable digitial mode */
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 13, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 18, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    uint8_t i = 0;
 
-    /* UART signal muxing via SWM */
-    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_UART0);
-    Chip_SWM_MovablePortPinAssign(SWM_UART0_RXD_I, 0, 13);
-    Chip_SWM_MovablePortPinAssign(SWM_UART0_TXD_O, 0, 18);
+    for(i = 0; i < ULTRASONIC_ID_LAST; i++)
+    {
+        gpio_output(ultrasonic_list[i].triger);
+        gpio_output_set(ultrasonic_list[i].triger, false);
+        gpio_input(ultrasonic_list[i].echo);
+    }
 
-    /* Use main clock rate as base for UART baud rate divider */
-    Chip_Clock_SetUARTBaseClockRate(Chip_Clock_GetMainClockRate(), false);
-
-    /* Setup UART */
-    Chip_UART_Init(LPC_USART0);
-    Chip_UART_ConfigData(LPC_USART0, UART_CFG_DATALEN_8 | UART_CFG_PARITY_NONE | UART_CFG_STOPLEN_1);
-    Chip_UART_SetBaud(LPC_USART0, UART_0_BAUDRATE);
-    Chip_UART_Enable(LPC_USART0);
-    Chip_UART_TXEnable(LPC_USART0);
-
-    /* Before using the ring buffers, initialize them using the ring buffer init function */
-    RingBuffer_Init((RINGBUFF_T *)&uart0_rx_rb, uart_0_rx_buffer, 1, UART_0_RX_BUFFER_SIZE);
-    RingBuffer_Init((RINGBUFF_T *)&uart0_tx_rb, uart_0_tx_buffer, 1, UART_0_TX_BUFFER_SIZE);
-
-    /* Enable receive data and line status interrupt */
-    Chip_UART_IntEnable(LPC_USART0, UART_INTEN_RXRDY);
-    Chip_UART_IntDisable(LPC_USART0, UART_INTEN_TXRDY); /* May not be needed */
-
-    /* Enable UART interrupt */
-    NVIC_EnableIRQ(UART0_IRQn);
-
-    return;
+    return true;
 }
 
-void uart_0_send(uint8_t *data, uint32_t size)
+uint32_t ultrasonic_read(ultrasonic_id_t id)
 {
-    Chip_UART_SendBlocking(LPC_USART0, data, size);
+    uint32_t high = 0;
+    uint32_t low = 0;
+    uint32_t range = 0;
+    uint32_t timeout = 0;
 
-    return;
-}
+    gpio_output(ultrasonic_list[id].triger);
+    gpio_output_high(ultrasonic_list[id].triger);
+    ultrasonic_delay_us(20);
+    gpio_output_low(ultrasonic_list[id].triger);
 
-void uart_0_send_rb(uint8_t *data, uint32_t size)
-{
-    Chip_UART_SendRB(LPC_USART0, (RINGBUFF_T *)&uart0_tx_rb, data, size);
+    do
+    {
+        if(gpio_input_get(GPIO_ULTRASONIC_1_ECHO) == true)
+        {
+            high = osKernelSysTick() / (SystemCoreClock / 1000000);
+            timeout = 0;
+            break;
+        }
+        else
+        {
+            timeout++;
+            if(timeout == 0xFFF)
+            {
+                return 0;
+            }
+        }
+    }
+    while(1);
+    do
+    {
+        if(gpio_input_get(GPIO_ULTRASONIC_1_ECHO) == false)
+        {
+            low = osKernelSysTick() /  (SystemCoreClock / 1000000);
+            break;
+        }
+        else
+        {
+            timeout++;
+            if(timeout == 0xFFFF)
+            {
+                return 0;
+            }
+        }
+    }
+    while(1);
 
-    return;
-}
+    range = (low - high);
+    range = ((float)range * 0.0165);
 
-uint32_t uart_0_read_rb(uint8_t *data, uint32_t size)
-{
-    return Chip_UART_ReadRB(LPC_USART0, (RINGBUFF_T *)&uart0_rx_rb, data, size);
-}
-
-void UART0_IRQHandler(void)
-{
-    Chip_UART_IRQRBHandler(LPC_USART0, (RINGBUFF_T *)&uart0_rx_rb, (RINGBUFF_T *)&uart0_tx_rb);
-
-    return;
+    return range;
 }
 
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+static void ultrasonic_delay_us(uint32_t us)
+{
+    /* Go to clock cycles */
+    us *= (SystemCoreClock / 1000000) / 8;
+
+    /* Wait till done */
+    while(us--)
+    {
+        __nop();
+    }
+
+    return;
+}

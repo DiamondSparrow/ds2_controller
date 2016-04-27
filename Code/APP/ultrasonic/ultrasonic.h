@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        cli_cmd.h
+ * @file        ultrasonic.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-04-10
- * @brief       This is C header file template.
+ * @date        2016-04-14
+ * @brief       Ultrasonic (HC SR-04) C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef CLI_CMD_H_
-#define CLI_CMD_H_
+#ifndef ULTRASONIC_H_
+#define ULTRASONIC_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +41,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
-
+typedef enum
+{
+    ULTRASONIC_ID_FRONT = 0,
+    ULTRASONIC_ID_LAST,
+} ultrasonic_id_t;
 /**********************************************************************************************************************
  * Prototypes of exported variables
  *********************************************************************************************************************/
@@ -49,15 +53,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void cli_cmd_register(void);
-
-bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd);
+bool ultrasonic_init(void);
+uint32_t ultrasonic_read(ultrasonic_id_t id);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLI_CMD_H_ */
+#endif /* ULTRASONIC_H_ */

@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        cli_cmd.h
+ * @file        pwm.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-04-10
- * @brief       This is C header file template.
+ * @date        2016-04-12
+ * @brief       Pulse Width Modulation (PWM) C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef CLI_CMD_H_
-#define CLI_CMD_H_
+#ifndef PWM_H_
+#define PWM_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,12 +27,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdint.h>
-#include <stdbool.h>
 
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
+#define PWM_0_RATE    50  //!< PWM frequency in Hz.
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -41,6 +40,12 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+typedef enum
+{
+    PWM_ID_PAN  = 0,//!< PWM_ID_PAN
+    PWM_ID_TILT = 1,//!< PWM_ID_TILT
+    PWM_ID_LAST,    //!< PWM_ID_LAST
+} pwm_id_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -49,15 +54,12 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void cli_cmd_register(void);
-
-bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd);
+void pwm_init(void);
+uint32_t pwm_get_duty_cycle(pwm_id_t id);
+void pwm_set(pwm_id_t id, uint32_t duty_cycle);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CLI_CMD_H_ */
+#endif /* PWM_H_ */

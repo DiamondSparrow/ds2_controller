@@ -44,6 +44,8 @@ typedef enum
     GPIO_LED_RED,
     GPIO_LED_GREEN,
     GPIO_LED_BLUE,
+    GPIO_ULTRASONIC_1_TRIGER,
+    GPIO_ULTRASONIC_1_ECHO,
     GPIO_LAST,
 } gpio_t;
 

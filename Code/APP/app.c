@@ -31,6 +31,8 @@
 #include "bsp.h"
 
 #include "cli/cli_app.h"
+#include "servo/servo.h"
+#include "ultrasonic/ultrasonic.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -59,6 +61,7 @@ osThreadId app_thread_id;
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
+static void app_delay_us(volatile uint32_t us);
 
 /**********************************************************************************************************************
  * Exported functions
@@ -95,7 +98,6 @@ int main(void)
     }
     DEBUG_BOOT("Kernel ...... ok.");
 
-
     // Create application thread.
     if((app_thread_id = osThreadCreate(osThread(app_thread), NULL)) == NULL)
     {
@@ -116,6 +118,8 @@ int main(void)
 
 void app_thread(void const *arg)
 {
+    uint32_t range = 0;
+
     debug_init();
     DEBUG_INIT(" * Initializing.");
     indication_set_blocking(INDICATION_INIT);
@@ -123,6 +127,10 @@ void app_thread(void const *arg)
     DEBUG_INIT("Indication .. ok.");
     cli_app_init();
     DEBUG_INIT("CLI APP ..... ok.");
+    servo_init();
+    DEBUG_INIT("Servo ...... ok.");
+    ultrasonic_init();
+    DEBUG_INIT("Ultrasonic . ok.");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
@@ -130,14 +138,16 @@ void app_thread(void const *arg)
 
     while(1)
     {
-        osDelay(100);
+        osDelay(500);
+        range = ultrasonic_read(ULTRASONIC_ID_FRONT);
+        DEBUG("Range = %d", range);
     }
 }
 
 void app_error(void)
 {
     indication_set_blocking(INDICATION_RED);
-    debug_send_blocking("ERROR!\r", 7);
+    debug_send_blocking((uint8_t *)"ERROR!\r", 7);
 
     while(1)
     {
@@ -148,10 +158,23 @@ void app_error(void)
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+static void app_delay_us(volatile uint32_t us)
+{
+    /* Go to clock cycles */
+    us *= (SystemCoreClock / 1000000) / 8;
+
+    /* Wait till done */
+    while(us--)
+    {
+        __nop();
+    }
+
+    return;
+}
 
 void HardFault_Handler(void)
 {
-    debug_send_blocking("HARD FAULT!", 11);
+    debug_send_blocking((uint8_t *)"HARD FAULT!\r", 13);
 
     NVIC_SystemReset();
 
