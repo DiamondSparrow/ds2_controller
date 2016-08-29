@@ -31,6 +31,7 @@
 #include "bsp.h"
 
 #include "cli/cli_app.h"
+#include "display/ssd1306.h"
 #include "servo/servo.h"
 #include "ultrasonic/ultrasonic.h"
 
@@ -106,6 +107,7 @@ int main(void)
     }
     DEBUG_BOOT("APP ......... ok.");
 
+
     // Start kernel.
     if(osKernelStart() != osOK)
     {
@@ -118,8 +120,6 @@ int main(void)
 
 void app_thread(void const *arg)
 {
-    uint32_t range = 0;
-
     debug_init();
     DEBUG_INIT(" * Initializing.");
     indication_set_blocking(INDICATION_INIT);
@@ -128,19 +128,43 @@ void app_thread(void const *arg)
     cli_app_init();
     DEBUG_INIT("CLI APP ..... ok.");
     servo_init();
-    DEBUG_INIT("Servo ...... ok.");
+    DEBUG_INIT("Servo ....... ok.");
     ultrasonic_init();
-    DEBUG_INIT("Ultrasonic . ok.");
+    DEBUG_INIT("Ultrasonic .. ok.");
+    ssd1306_init();
+    DEBUG_INIT("Display ..... ok.");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
+    ssd1306_draw_rectangle(2, 1, 128, 64, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+    ssd1306_draw_filled_rectangle(2, 1, 128, 10, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+
+    ssd1306_goto_xy(3, 13);
+    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+    ssd1306_goto_xy(3, 23);
+    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+    ssd1306_goto_xy(3, 33);
+    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+    ssd1306_goto_xy(3, 43);
+    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+    ssd1306_goto_xy(3, 53);
+    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_update_screen();
+
+    osDelay(5000);
+    ssd1306_power_off();
+
     while(1)
     {
-        osDelay(500);
-        range = ultrasonic_read(ULTRASONIC_ID_FRONT);
-        DEBUG("Range = %d", range);
+        osDelay(100);
     }
 }
 

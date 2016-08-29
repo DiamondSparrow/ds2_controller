@@ -65,7 +65,7 @@ extern "C" {
 #define I2CM_STATUS_ERROR           0x01		/*!< Unknown error condition. */
 #define I2CM_STATUS_NAK_ADR         0x02		/*!< No acknowledgement received from slave during address phase. */
 #define I2CM_STATUS_BUS_ERROR       0x03		/*!< I2C bus error */
-#define I2CM_STATUS_NAK_DAT           0x04		/*!< No acknowledgement received from slave during address phase. */
+#define I2CM_STATUS_NAK_DAT         0x04		/*!< No acknowledgement received from slave during address phase. */
 #define I2CM_STATUS_ARBLOST         0x05		/*!< Arbitration lost. */
 #define I2CM_STATUS_BUSY            0xFF		/*!< I2C transmistter is busy. */
 

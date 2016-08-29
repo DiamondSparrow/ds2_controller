@@ -63,6 +63,7 @@ void bsp_init(void)
     Chip_SYSCTL_PeriphReset(RESET_IOCON);
 
     gpio_init();
+    i2c_init();
     uart_0_init();
     pwm_init();
 
