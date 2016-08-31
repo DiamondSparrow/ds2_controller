@@ -442,6 +442,16 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>APP/Light</GroupName>
+          <Files>
+            <File>
+              <FileName>bh1750.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\light\bh1750.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>APP/Servo</GroupName>
           <Files>
             <File>
@@ -483,6 +493,11 @@
               <FileName>pwm.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\BSP\pwm.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\spi.c</FilePath>
             </File>
             <File>
               <FileName>uart.c</FileName>

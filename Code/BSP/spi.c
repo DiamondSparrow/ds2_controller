@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file         i2c.c
+ * @file         spi.c
  * @author       Diamond Sparrow
  * @version      1.0.0.0
- * @date         2016-08-29
- * @brief        This is C source file template.
+ * @date         2016-08-30
+ * @brief        SPI C source file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -25,15 +25,11 @@
 
 #include "chip.h"
 
-#include "i2c.h"
+#include "spi.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-/* I2C clock is set to 1.8MHz */
-#define I2C_CLK_DIVIDER         (40)
-/* 100KHz I2C bit-rate */
-#define I2C_BITRATE             (400000)
 
 /**********************************************************************************************************************
  * Private definitions and macros
@@ -46,9 +42,6 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/* I2CM transfer record */
-static I2CM_XFER_T  i2c_xfer_rec = {0};
-static uint8_t i2c_buffer[256 + 1] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -61,73 +54,56 @@ static uint8_t i2c_buffer[256 + 1] = {0};
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-void i2c_init(void)
+void spi_init(void)
 {
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 22, IOCON_DIGMODE_EN);
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 23, IOCON_DIGMODE_EN);
-    Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SCL);
-    Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SDA);
+    SPI_CFG_T spiCfg;
+    SPI_DELAY_CONFIG_T spiDelayCfg;
 
-    /* Enable I2C clock and reset I2C peripheral - the boot ROM does not do this */
-    Chip_I2C_Init(LPC_I2C0);
+    /* Enable the clock to the Switch Matrix */
+    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
+    /*
+     * Initialize SPI0 pins connect
+     * SCK0: PINASSIGN3[15:8]: Select P0.0
+     * MOSI0: PINASSIGN3[23:16]: Select P0.16
+     * MISO0: PINASSIGN3[31:24] : Select P0.10
+     * SSEL0: PINASSIGN4[7:0]: Select P0.9
+     */
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 16, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
-    /* Setup clock rate for I2C */
-    Chip_I2C_SetClockDiv(LPC_I2C0, I2C_CLK_DIVIDER);
+    Chip_SWM_MovablePinAssign(SWM_SPI0_SCK_IO, 0);      /* P0.0 */
+    Chip_SWM_MovablePinAssign(SWM_SPI0_MOSI_IO, 16);    /* P0.16 */
+    Chip_SWM_MovablePinAssign(SWM_SPI0_MISO_IO, 10);    /* P0.10 */
+    Chip_SWM_MovablePinAssign(SWM_SPI0_SSELSN_0_IO, 9); /* P0.9 */
 
-    /* Setup I2CM transfer rate */
-    Chip_I2CM_SetBusSpeed(LPC_I2C0, I2C_BITRATE);
+    /* Disable the clock to the Switch Matrix to save power */
+    Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
-    /* Enable Master Mode */
-    Chip_I2CM_Enable(LPC_I2C0);
-
-    /* Disable the interrupt for the I2C */
-    NVIC_DisableIRQ(I2C0_IRQn);
+    /* Initialize SPI Block */
+    Chip_SPI_Init(LPC_SPI0);
+    /* Set SPI Config register */
+    spiCfg.ClkDiv       = 0xFFFF; /* Set Clock divider to maximum */
+    spiCfg.Mode         = SPI_MODE_MASTER; /* Enable Master Mode */
+    spiCfg.ClockMode    = SPI_CLOCK_MODE0; /* Enable Mode 0 */
+    spiCfg.DataOrder    = SPI_DATA_MSB_FIRST; /* Transmit MSB first */
+    /* Slave select polarity is active low */
+    spiCfg.SSELPol      = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
+    Chip_SPI_SetConfig(LPC_SPI0, &spiCfg);
+    /* Set Delay register */
+    spiDelayCfg.PreDelay        = 2;
+    spiDelayCfg.PostDelay       = 2;
+    spiDelayCfg.FrameDelay      = 2;
+    spiDelayCfg.TransferDelay   = 2;
+    Chip_SPI_DelayConfig(LPC_SPI0, &spiDelayCfg);
+    /* Enable Loopback mode for this example */
+    Chip_SPI_EnableLoopBack(LPC_SPI0);
+    /* Enable SPI0 */
+    Chip_SPI_Enable(LPC_SPI0);
 
     return;
-}
-
-void i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data)
-{
-    uint8_t buffer[2] = {0};
-
-    buffer[0] = reg;
-    buffer[1] = data;
-
-    i2c_tx_rx(addr, buffer, 2, NULL, 0);
-
-    return;
-}
-
-void i2c_write_reg_multi(uint8_t addr, uint8_t reg, uint8_t *data, uint16_t size)
-{
-    i2c_buffer[0] = reg;
-    memcpy(&i2c_buffer[1], data, size);
-
-    i2c_tx_rx(addr, i2c_buffer, size + 1, NULL, 0);
-
-    return;
-}
-
-
-bool i2c_tx_rx(uint8_t addr, uint8_t *tx_buff, uint16_t tx_size, uint8_t *rx_buff, uint16_t rx_size)
-{
-    /* Setup I2C transfer record */
-    i2c_xfer_rec.slaveAddr  = addr;
-    i2c_xfer_rec.status     = 0;
-    i2c_xfer_rec.txSz       = tx_size;
-    i2c_xfer_rec.rxSz       = rx_size;
-    i2c_xfer_rec.txBuff     = tx_buff;
-    i2c_xfer_rec.rxBuff     = rx_buff;
-
-    Chip_I2CM_XferBlocking(LPC_I2C0, &i2c_xfer_rec);
-    if(i2c_xfer_rec.status == I2CM_STATUS_OK)
-    {
-        return true;
-    }
-
-    return false;
 }
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
-

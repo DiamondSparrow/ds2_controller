@@ -21,6 +21,8 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "chip.h"
 #include "cmsis_os.h"
@@ -32,6 +34,7 @@
 
 #include "cli/cli_app.h"
 #include "display/ssd1306.h"
+#include "light/bh1750.h"
 #include "servo/servo.h"
 #include "ultrasonic/ultrasonic.h"
 
@@ -120,6 +123,11 @@ int main(void)
 
 void app_thread(void const *arg)
 {
+    uint8_t str[18] = {0};
+    uint16_t light_level = 0;
+    uint8_t offset_x = 0;
+
+    uint8_t ret = false;
     debug_init();
     DEBUG_INIT(" * Initializing.");
     indication_set_blocking(INDICATION_INIT);
@@ -131,40 +139,47 @@ void app_thread(void const *arg)
     DEBUG_INIT("Servo ....... ok.");
     ultrasonic_init();
     DEBUG_INIT("Ultrasonic .. ok.");
-    ssd1306_init();
-    DEBUG_INIT("Display ..... ok.");
+    ret = ssd1306_init();
+    DEBUG_INIT("Display ..... %s.", ret == false ? "err" : "ok");
+    ret = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
+    DEBUG_INIT("BH1750 ...... %s.", ret == false ? "err" : "ok");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
-    ssd1306_draw_rectangle(2, 1, 128, 64, SSD1306_COLOR_WHITE);
+    ssd1306_draw_rectangle(2, 11, 128, 64, SSD1306_COLOR_WHITE);
     ssd1306_update_screen();
-    ssd1306_draw_filled_rectangle(2, 1, 128, 10, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
+    //ssd1306_draw_filled_rectangle(2, 1, 128, 10, SSD1306_COLOR_WHITE);
+    //ssd1306_update_screen();
 
-    ssd1306_goto_xy(3, 13);
-    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_goto_xy(46, 16);
+    ssd1306_puts("Light", &fonts_7x10, SSD1306_COLOR_WHITE);
     ssd1306_update_screen();
-    ssd1306_goto_xy(3, 23);
-    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_goto_xy(58, 29);
+    ssd1306_puts("?", &fonts_11x18, SSD1306_COLOR_WHITE);
     ssd1306_update_screen();
-    ssd1306_goto_xy(3, 33);
-    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    ssd1306_goto_xy(56, 50);
+    ssd1306_puts("lx.", &fonts_7x10, SSD1306_COLOR_WHITE);
     ssd1306_update_screen();
-    ssd1306_goto_xy(3, 43);
-    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
+    osDelay(500);
     ssd1306_update_screen();
-    ssd1306_goto_xy(3, 53);
-    ssd1306_puts("ABCDEFGHIJKLMNOPRS", &fonts_7x10, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-
-    osDelay(5000);
-    ssd1306_power_off();
 
     while(1)
     {
-        osDelay(100);
+        if(ret == true)
+        {
+            light_level = bh1750_read_level();
+            snprintf((char *)str, 18, "%d", light_level);
+            offset_x = (128 - (strlen((char *)str)  * 11)) / 2;
+            ssd1306_goto_xy(3, 29);
+            ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+            snprintf((char *)str, 18, "%d    ", light_level);
+            ssd1306_goto_xy(offset_x, 29);
+            ssd1306_puts(str, &fonts_11x18, SSD1306_COLOR_WHITE);
+            ssd1306_update_screen();
+        }
+        osDelay(120);
     }
 }
 

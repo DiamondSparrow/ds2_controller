@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        i2c.h
+ * @file        bh1750.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-08-29
- * @brief       I2C C header file.
+ * @date        2016-08-30
+ * @brief       This is C header file template.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef I2C_H_
-#define I2C_H_
+#ifndef BH1750_H_
+#define BH1750_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,9 +27,7 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdint.h>
-#include <stdbool.h>
-    
+
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
@@ -41,6 +39,24 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+typedef enum
+{
+    BH1750_MODE_CONT_HIGH_RES       = 0x10, /**< Start measurement at 1 lx resolution.
+                                                 Measurement Time is typically 120 ms. */
+    BH1750_MODE_CONT_HIGH_RES_2     = 0x11, /**< Start measurement at 0.5 lx resolution.
+                                                 Measurement Time is typically 120 ms. */
+    BH1750_MODE_CONT_LOW_RES        = 0x13, /**< Start measurement at 4 lx resolution.
+                                                 Measurement Time is typically 16 ms. */
+    BH1750_MODE_ONE_TIME_HIGH_RES   = 0x20, /**< Start measurement at 1 lx resolution.
+                                                 Measurement Time is typically 120 ms.
+                                                 It is automatically set to Power Down mode after measurement. */
+    BH1750_MODE_ONE_TIME_HIGH_RES_2 = 0x21, /**< Start measurement at 0.5 lx resolution.
+                                                 Measurement Time is typically 120ms.
+                                                 It is automatically set to Power Down mode after measurement. */
+    BH1750_MODE_ONE_TIME_LOW_RES    = 0x23, /**< Start measurement at 4 lx resolution.
+                                                 Measurement Time is typically 16 ms.
+                                                 It is automatically set to Power Down mode after measurement. */
+} bh1750_mode_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -49,28 +65,27 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void i2c_init(void);
 /**
- * @brief  Writes single byte to slave
- * @param  *I2Cx: I2C used
- * @param  address: 7 bit slave address, left aligned, bits 7:1 are used, LSB bit is not used
- * @param  reg: register to write to
- * @param  data: data to be written
- * @retval None
- */
-/**
- * @brief   Writes single byte to slave register.
+ * @brief   Initialize light sensor BH1750.
  *
- * @param   addr    Salve address.
- * @param   reg     Register to write to.
- * @param   data    Data to be written.
+ * @param   mode    Mode to initialize.
+ *
+ * @return  State of initialization.
+ * @retval  0   failed.
+ * @retval  1   success.
  */
-void i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data);
-void i2c_write_reg_multi(uint8_t addr, uint8_t reg, uint8_t *data, uint16_t size);
-bool i2c_tx_rx(uint8_t dev_dddr, uint8_t *tx_buff, uint16_t tx_size, uint8_t *rx_buff, uint16_t rx_size);
+bool bh1750_init(bh1750_mode_t mode);
+
+/**
+ * @brief   Read BH1750 light level.
+ *
+ * @return  Light level in lx.
+ */
+uint16_t bh1750_read_level(void);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* I2C_H_ */
+#endif /* BH1750_H_ */

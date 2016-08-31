@@ -1,9 +1,9 @@
 /**
  **********************************************************************************************************************
- * @file         i2c.c
+ * @file         bh1750.c
  * @author       Diamond Sparrow
  * @version      1.0.0.0
- * @date         2016-08-29
+ * @date         2016-08-30
  * @brief        This is C source file template.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
@@ -20,20 +20,44 @@
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdio.h>
 #include <stdint.h>
-#include <string.h>
+#include <stdbool.h>
 
-#include "chip.h"
+#include "bh1750.h"
 
 #include "i2c.h"
+#include "cmsis_os.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-/* I2C clock is set to 1.8MHz */
-#define I2C_CLK_DIVIDER         (40)
-/* 100KHz I2C bit-rate */
-#define I2C_BITRATE             (400000)
+/**< BH1750 I2C address. */
+#define BH1750_I2C_ADDR_HIGH                0x5C
+#define BH1750_I2C_ADDR_LOW                 0x23
+#define BH1750_I2C_ADDR                     (BH1750_I2C_ADDR_LOW)
+
+/**< No active state. */
+#define BH1750_REG_POWER_DOWN               0x00
+/**< Waiting for measurement command. */
+#define BH1750_REG_POWER_ON                 0x01
+/**< Reset Data register value. Reset command is not acceptable in Power Down mode. */
+#define BH1750_REG_RESET                    0x07
+/**< Start measurement at 1 lx resolution. Measurement Time is typically 120 ms. */
+#define BH1750_REG_CONTHIGH_RES_MODE        0x10
+/**< Start measurement at 0.5 lx resolution. Measurement Time is typically 120 ms. */
+#define BH1750_REG_CONT_HIGH_RES_MODE_2     0x11
+/**< Start measurement at 4 lx resolution. Measurement Time is typically 16 ms. */
+#define BH1750_REG_CONT_LOW_RES_MODE        0x13
+/**< Start measurement at 1 lx resolution. Measurement Time is typically 120 ms.
+ * It is automatically set to Power Down mode after measurement. */
+#define BH1750_REG_ONE_TIME_HIGH_RES_MODE   0x20
+/**< Start measurement at 0.5 lx resolution. Measurement Time is typically 120ms.
+ * It is automatically set to Power Down mode after measurement. */
+#define BH1750_REG_ONE_TIME_HIGH_RES_MODE_2 0x21
+/**< Start measurement at 4 lx resolution. Measurement Time is typically 16 ms.
+ * It is automatically set to Power Down mode after measurement. */
+#define BH1750_REG_ONE_TIME_LOW_RES_MODE    0x23
 
 /**********************************************************************************************************************
  * Private definitions and macros
@@ -46,9 +70,6 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/* I2CM transfer record */
-static I2CM_XFER_T  i2c_xfer_rec = {0};
-static uint8_t i2c_buffer[256 + 1] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -57,77 +78,60 @@ static uint8_t i2c_buffer[256 + 1] = {0};
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
+static inline bool bh1750_io_write(uint8_t data);
+static inline bool bh1750_io_read(uint8_t *data, uint8_t size);
 
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-void i2c_init(void)
+bool bh1750_init(bh1750_mode_t mode)
 {
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 22, IOCON_DIGMODE_EN);
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 23, IOCON_DIGMODE_EN);
-    Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SCL);
-    Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SDA);
-
-    /* Enable I2C clock and reset I2C peripheral - the boot ROM does not do this */
-    Chip_I2C_Init(LPC_I2C0);
-
-    /* Setup clock rate for I2C */
-    Chip_I2C_SetClockDiv(LPC_I2C0, I2C_CLK_DIVIDER);
-
-    /* Setup I2CM transfer rate */
-    Chip_I2CM_SetBusSpeed(LPC_I2C0, I2C_BITRATE);
-
-    /* Enable Master Mode */
-    Chip_I2CM_Enable(LPC_I2C0);
-
-    /* Disable the interrupt for the I2C */
-    NVIC_DisableIRQ(I2C0_IRQn);
-
-    return;
-}
-
-void i2c_write_reg(uint8_t addr, uint8_t reg, uint8_t data)
-{
-    uint8_t buffer[2] = {0};
-
-    buffer[0] = reg;
-    buffer[1] = data;
-
-    i2c_tx_rx(addr, buffer, 2, NULL, 0);
-
-    return;
-}
-
-void i2c_write_reg_multi(uint8_t addr, uint8_t reg, uint8_t *data, uint16_t size)
-{
-    i2c_buffer[0] = reg;
-    memcpy(&i2c_buffer[1], data, size);
-
-    i2c_tx_rx(addr, i2c_buffer, size + 1, NULL, 0);
-
-    return;
-}
-
-
-bool i2c_tx_rx(uint8_t addr, uint8_t *tx_buff, uint16_t tx_size, uint8_t *rx_buff, uint16_t rx_size)
-{
-    /* Setup I2C transfer record */
-    i2c_xfer_rec.slaveAddr  = addr;
-    i2c_xfer_rec.status     = 0;
-    i2c_xfer_rec.txSz       = tx_size;
-    i2c_xfer_rec.rxSz       = rx_size;
-    i2c_xfer_rec.txBuff     = tx_buff;
-    i2c_xfer_rec.rxBuff     = rx_buff;
-
-    Chip_I2CM_XferBlocking(LPC_I2C0, &i2c_xfer_rec);
-    if(i2c_xfer_rec.status == I2CM_STATUS_OK)
+    if(bh1750_io_write(BH1750_REG_RESET) == false)
     {
-        return true;
+        return false;
+    }
+    osDelay(10);
+
+    if(bh1750_io_write(mode) == false)
+    {
+        return false;
     }
 
-    return false;
+    return true;
 }
+
+uint16_t bh1750_read_level(void)
+{
+    uint8_t value[2] = {0};
+
+    if(bh1750_io_read(value, 2) == false)
+    {
+        return UINT16_MAX;
+    }
+
+    return (uint16_t)((value[0] << 8) | value[1]);
+}
+
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+static inline bool bh1750_io_write(uint8_t data)
+{
+    if(i2c_tx_rx(BH1750_I2C_ADDR, &data, 1, NULL, 0) == false)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+static inline bool bh1750_io_read(uint8_t *data, uint8_t size)
+{
+    if(i2c_tx_rx(BH1750_I2C_ADDR, NULL, 0, data, size) == false)
+    {
+        return false;
+    }
+
+    return true;
+}
 

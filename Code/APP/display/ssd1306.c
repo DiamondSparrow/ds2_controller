@@ -37,9 +37,9 @@
  *********************************************************************************************************************/
 
 /** Write command. */
-#define SSD1306_WRITECOMMAND(command)       i2c_write_reg(SSD1306_I2C_ADDR, 0x00, (command))
+#define SSD1306_WRITECOMMAND(command)       i2c_write_reg((SSD1306_I2C_ADDR >> 1), 0x00, (command))
 /** Write data. */
-#define SSD1306_WRITEDATA(data)             i2c_write_reg(SSD1306_I2C_ADDR, 0x40, (data))
+#define SSD1306_WRITEDATA(data)             i2c_write_reg((SSD1306_I2C_ADDR >> 1), 0x40, (data))
 /** Absolute value. */
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
 
@@ -143,6 +143,7 @@ void ssd1306_power_on(void)
 
     return;
 }
+
 void ssd1306_power_off(void)
 {
     SSD1306_WRITECOMMAND(0x8D);
@@ -163,7 +164,7 @@ void ssd1306_update_screen(void)
         SSD1306_WRITECOMMAND(0x10);
 
         /* Write multi data */
-        i2c_write_reg_multi(SSD1306_I2C_ADDR, 0x40, &ssd1306_buffer[SSD1306_WIDTH * m], SSD1306_WIDTH);
+        i2c_write_reg_multi((SSD1306_I2C_ADDR >> 1), 0x40, &ssd1306_buffer[SSD1306_WIDTH * m], SSD1306_WIDTH);
     }
     osDelay(1);
 
