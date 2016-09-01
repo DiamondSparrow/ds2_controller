@@ -439,15 +439,30 @@
               <FileType>1</FileType>
               <FilePath>..\..\Code\APP\display\ssd1306.c</FilePath>
             </File>
+            <File>
+              <FileName>display.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\display\display.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>APP/Light</GroupName>
+          <GroupName>APP/Sensors</GroupName>
           <Files>
+            <File>
+              <FileName>am2301.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\sensors\am2301.c</FilePath>
+            </File>
             <File>
               <FileName>bh1750.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\Code\APP\light\bh1750.c</FilePath>
+              <FilePath>..\..\Code\APP\sensors\bh1750.c</FilePath>
+            </File>
+            <File>
+              <FileName>sensors.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\sensors\sensors.c</FilePath>
             </File>
           </Files>
         </Group>

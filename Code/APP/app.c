@@ -33,8 +33,8 @@
 #include "bsp.h"
 
 #include "cli/cli_app.h"
-#include "display/ssd1306.h"
-#include "light/bh1750.h"
+#include "display/display.h"
+#include "sensors/sensors.h"
 #include "servo/servo.h"
 #include "ultrasonic/ultrasonic.h"
 
@@ -65,7 +65,7 @@ osThreadId app_thread_id;
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
-static void app_delay_us(volatile uint32_t us);
+//static void app_delay_us(volatile uint32_t us);
 
 /**********************************************************************************************************************
  * Exported functions
@@ -123,11 +123,10 @@ int main(void)
 
 void app_thread(void const *arg)
 {
-    uint8_t str[18] = {0};
-    uint16_t light_level = 0;
-    uint8_t offset_x = 0;
+    display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
+    uint8_t ret = 0;
+    bool sw1 = false;
 
-    uint8_t ret = false;
     debug_init();
     DEBUG_INIT(" * Initializing.");
     indication_set_blocking(INDICATION_INIT);
@@ -139,47 +138,39 @@ void app_thread(void const *arg)
     DEBUG_INIT("Servo ....... ok.");
     ultrasonic_init();
     DEBUG_INIT("Ultrasonic .. ok.");
-    ret = ssd1306_init();
+    ret = display_init();
     DEBUG_INIT("Display ..... %s.", ret == false ? "err" : "ok");
-    ret = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
-    DEBUG_INIT("BH1750 ...... %s.", ret == false ? "err" : "ok");
+    //ret = sensors_init();
+    //DEBUG_INIT("Sensors ...... %s.", ret == false ? "err" : "ok");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
-    ssd1306_draw_rectangle(2, 11, 128, 64, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-    //ssd1306_draw_filled_rectangle(2, 1, 128, 10, SSD1306_COLOR_WHITE);
-    //ssd1306_update_screen();
-
-    ssd1306_goto_xy(46, 16);
-    ssd1306_puts("Light", &fonts_7x10, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-    ssd1306_goto_xy(58, 29);
-    ssd1306_puts("?", &fonts_11x18, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-    ssd1306_goto_xy(56, 50);
-    ssd1306_puts("lx.", &fonts_7x10, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-    osDelay(500);
-    ssd1306_update_screen();
+    osDelay(3000);
+    menu_id = DISPLAY_MENU_ID_CLOCK;
+    display_menu_set(menu_id);
 
     while(1)
     {
-        if(ret == true)
+        if(gpio_input_get(GPIO_SW_1) == false)
         {
-            light_level = bh1750_read_level();
-            snprintf((char *)str, 18, "%d", light_level);
-            offset_x = (128 - (strlen((char *)str)  * 11)) / 2;
-            ssd1306_goto_xy(3, 29);
-            ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
-            snprintf((char *)str, 18, "%d    ", light_level);
-            ssd1306_goto_xy(offset_x, 29);
-            ssd1306_puts(str, &fonts_11x18, SSD1306_COLOR_WHITE);
-            ssd1306_update_screen();
+            if(sw1 == false)
+            {
+                menu_id++;
+                if(menu_id == DISPLAY_MENU_ID_LAST)
+                {
+                    menu_id = DISPLAY_MENU_ID_CLOCK;
+                }
+                display_menu_set(menu_id);
+            }
+            sw1 = true;
         }
-        osDelay(120);
+        else
+        {
+            sw1 = false;
+        }
+        osDelay(100);
     }
 }
 
@@ -197,12 +188,13 @@ void app_error(void)
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+/*
 static void app_delay_us(volatile uint32_t us)
 {
-    /* Go to clock cycles */
+    // Go to clock cycles
     us *= (SystemCoreClock / 1000000) / 8;
 
-    /* Wait till done */
+    // Wait till done
     while(us--)
     {
         __nop();
@@ -210,6 +202,7 @@ static void app_delay_us(volatile uint32_t us)
 
     return;
 }
+*/
 
 void HardFault_Handler(void)
 {

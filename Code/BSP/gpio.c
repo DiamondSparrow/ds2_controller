@@ -56,6 +56,8 @@ gpio_item_t gpio_list[GPIO_LAST] =
     {.port = 1, .pin =  1,  .dir = true,  .state = false,},
     {.port = 1, .pin =  9,  .dir = true,  .state = false,},
     {.port = 1, .pin =  10, .dir = false, .state = false,},
+    {.port = 0, .pin =  16, .dir = true,  .state = false,},
+    {.port = 0, .pin =  17, .dir = false, .state = false,},
 };
 /**********************************************************************************************************************
  * Exported variables
@@ -114,6 +116,13 @@ void gpio_output_high(gpio_t gpio)
     return;
 }
 
+void gpio_output_toggle(gpio_t gpio)
+{
+    Chip_GPIO_SetPortToggle(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
+
+    return;
+}
+
 void gpio_input(gpio_t gpio)
 {
     Chip_GPIO_SetPinDIRInput(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
@@ -123,7 +132,6 @@ void gpio_input(gpio_t gpio)
 
 bool gpio_input_get(gpio_t gpio)
 {
-
     return Chip_GPIO_ReadPortBit(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
 }
 

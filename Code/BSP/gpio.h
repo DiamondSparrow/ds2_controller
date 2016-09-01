@@ -27,6 +27,7 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdbool.h>
 
 /**********************************************************************************************************************
  * Exported constants
@@ -46,6 +47,8 @@ typedef enum
     GPIO_LED_BLUE,
     GPIO_ULTRASONIC_1_TRIGER,
     GPIO_ULTRASONIC_1_ECHO,
+    GPIO_AM2301,
+    GPIO_SW_1,
     GPIO_LAST,
 } gpio_t;
 
@@ -61,6 +64,7 @@ void gpio_output(gpio_t gpio);
 void gpio_output_set(gpio_t gpio, bool state);
 void gpio_output_low(gpio_t gpio);
 void gpio_output_high(gpio_t gpio);
+void gpio_output_toggle(gpio_t gpio);
 void gpio_input(gpio_t gpio);
 bool gpio_input_get(gpio_t gpio);
 
