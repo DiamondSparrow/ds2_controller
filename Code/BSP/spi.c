@@ -42,6 +42,9 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
+/* SPI Transfer Setup */
+static SPI_DATA_SETUP_T spi_0_xfer;
+static uint16_t rx_buffer[256] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -54,56 +57,119 @@
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-void spi_init(void)
+void spi_0_init(void)
 {
-    SPI_CFG_T spiCfg;
-    SPI_DELAY_CONFIG_T spiDelayCfg;
+    SPI_CFG_T spi_cfg;
+    SPI_DELAY_CONFIG_T spi_delay_cfg;
 
-    /* Enable the clock to the Switch Matrix */
+    // Enable the clock to the Switch Matrix.
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
     /*
      * Initialize SPI0 pins connect
-     * SCK0: PINASSIGN3[15:8]: Select P0.0
-     * MOSI0: PINASSIGN3[23:16]: Select P0.16
-     * MISO0: PINASSIGN3[31:24] : Select P0.10
-     * SSEL0: PINASSIGN4[7:0]: Select P0.9
+     * SCK0: PINASSIGN3[15:8]: Select P0.27
+     * MOSI0: PINASSIGN3[23:16]: Select P0.28
+     * MISO0: PINASSIGN3[31:24] : Select P0.12
+     * SSEL0: PINASSIGN4[7:0]: Select P0.29
      */
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 16, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 27, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 28, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 12, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    //Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 29,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
-    Chip_SWM_MovablePinAssign(SWM_SPI0_SCK_IO, 0);      /* P0.0 */
-    Chip_SWM_MovablePinAssign(SWM_SPI0_MOSI_IO, 16);    /* P0.16 */
-    Chip_SWM_MovablePinAssign(SWM_SPI0_MISO_IO, 10);    /* P0.10 */
-    Chip_SWM_MovablePinAssign(SWM_SPI0_SSELSN_0_IO, 9); /* P0.9 */
+    Chip_SWM_MovablePinAssign(SWM_SPI0_SCK_IO, 27);      // P0.27
+    Chip_SWM_MovablePinAssign(SWM_SPI0_MOSI_IO, 28);     // P0.28
+    Chip_SWM_MovablePinAssign(SWM_SPI0_MISO_IO, 12);     // P0.12
+    //Chip_SWM_MovablePinAssign(SWM_SPI0_SSELSN_0_IO, 29);  // P0.29
 
-    /* Disable the clock to the Switch Matrix to save power */
+    // Disable the clock to the Switch Matrix to save power .
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
-    /* Initialize SPI Block */
+    // Initialize SPI Block.
     Chip_SPI_Init(LPC_SPI0);
-    /* Set SPI Config register */
-    spiCfg.ClkDiv       = 0xFFFF; /* Set Clock divider to maximum */
-    spiCfg.Mode         = SPI_MODE_MASTER; /* Enable Master Mode */
-    spiCfg.ClockMode    = SPI_CLOCK_MODE0; /* Enable Mode 0 */
-    spiCfg.DataOrder    = SPI_DATA_MSB_FIRST; /* Transmit MSB first */
-    /* Slave select polarity is active low */
-    spiCfg.SSELPol      = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
-    Chip_SPI_SetConfig(LPC_SPI0, &spiCfg);
-    /* Set Delay register */
-    spiDelayCfg.PreDelay        = 2;
-    spiDelayCfg.PostDelay       = 2;
-    spiDelayCfg.FrameDelay      = 2;
-    spiDelayCfg.TransferDelay   = 2;
-    Chip_SPI_DelayConfig(LPC_SPI0, &spiDelayCfg);
-    /* Enable Loopback mode for this example */
-    Chip_SPI_EnableLoopBack(LPC_SPI0);
-    /* Enable SPI0 */
+    // Set SPI Config register.
+    spi_cfg.ClkDiv      = 16;               // Set Clock divider to maximum
+    spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
+    spi_cfg.ClockMode   = SPI_CLOCK_MODE0;      // Enable Mode 0
+    spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
+    // Slave select polarity is active low.
+    spi_cfg.SSELPol     = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
+    Chip_SPI_SetConfig(LPC_SPI0, &spi_cfg);
+    // Set Delay register.
+    spi_delay_cfg.PreDelay      = 8;
+    spi_delay_cfg.PostDelay     = 8;
+    spi_delay_cfg.FrameDelay    = 8;
+    spi_delay_cfg.TransferDelay = 8;
+    Chip_SPI_DelayConfig(LPC_SPI0, &spi_delay_cfg);
+
+    // Enable SPI0.
     Chip_SPI_Enable(LPC_SPI0);
 
     return;
 }
-/**********************************************************************************************************************
+
+uint8_t spi_0_read_byte(uint8_t byte)
+{
+    LPC_SPI0->TXDAT = byte;
+    while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_TXRDY));
+
+    return LPC_SPI0->RXDAT;
+}
+
+void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
+{
+    uint16_t i = 0;
+
+    for(i = 0; i < size; i++)
+    {
+        buffer[i] = spi_0_read_byte(0xFF);
+    }
+
+    return;
+}
+
+static uint16_t tx_buffer[128] = {0};
+
+void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
+{
+#if 1
+    uint16_t i = 0;
+    
+    for(i = 0; i < size; i++)
+    {
+        tx_buffer[i] = buffer[i];
+    }    
+    
+    spi_0_xfer.pTx = tx_buffer;    /* Transmit Buffer */
+    spi_0_xfer.pRx = rx_buffer; /* Receive Buffer */
+    spi_0_xfer.DataSize = 8;                /* Data size in bits */
+    spi_0_xfer.Length = size;               /* Total frame length */
+    /* Assert only SSEL0 */
+    spi_0_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
+    spi_0_xfer.TxCnt = 0;
+    spi_0_xfer.RxCnt = 0;
+
+    Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+#else
+    uint16_t i = 0;
+    for(i = 0; i < size; i++)
+    {
+        spi_0_write_byte(buffer[i]);
+    }
+#endif
+
+    return;
+}
+
+void spi_0_write_byte(uint8_t byte)
+{
+    LPC_SPI0->TXDAT = byte;
+    while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_TXRDY));
+    LPC_SPI0->RXDAT;
+
+    return;
+}
+
+/**
+ * ********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/

@@ -34,6 +34,8 @@
 
 #include "cli/cli_app.h"
 #include "display/display.h"
+#include "display/ssd1306.h"
+#include "motor/motor.h"
 #include "sensors/sensors.h"
 #include "servo/servo.h"
 #include "ultrasonic/ultrasonic.h"
@@ -140,16 +142,21 @@ void app_thread(void const *arg)
     DEBUG_INIT("Ultrasonic .. ok.");
     ret = display_init();
     DEBUG_INIT("Display ..... %s.", ret == false ? "err" : "ok");
-    //ret = sensors_init();
-    //DEBUG_INIT("Sensors ...... %s.", ret == false ? "err" : "ok");
+    ret = sensors_init();
+    DEBUG_INIT("Sensors ..... %s.", ret == false ? "err" : "ok");
+    ret = motor_init();
+    DEBUG_INIT("Motor ....... %s.", ret == false ? "err" : "ok");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
-    osDelay(3000);
+    osDelay(1000);
+
     menu_id = DISPLAY_MENU_ID_CLOCK;
     display_menu_set(menu_id);
+    //motor_test_ramp(MOTOR_ID_LEFT, 10);
+    //motor_test_ramp(MOTOR_ID_RIGHT, 10);
 
     while(1)
     {

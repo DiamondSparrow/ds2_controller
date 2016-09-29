@@ -22,11 +22,16 @@
  *********************************************************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "display/display.h"
 #include "display/ssd1306.h"
 
+#include "sensors/sensors.h"
+
 #include "cmsis_os.h"
+#include "rtc.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -57,8 +62,8 @@ typedef struct
 /** Display thread ID. */
 osThreadId display_thread_id;
 
-display_menu_id_t display_menu_id = DISPLAY_MENU_ID_WELCOME;
-display_menu_t display_menus[DISPLAY_MENU_ID_LAST] = {0};
+volatile display_menu_id_t display_menu_id = DISPLAY_MENU_ID_WELCOME;
+volatile display_menu_t display_menus[DISPLAY_MENU_ID_LAST] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -75,6 +80,9 @@ static void display_meniu_cb_light(display_menu_id_t id);
 static void display_meniu_cb_temperature(display_menu_id_t id);
 static void display_meniu_cb_humidity(display_menu_id_t id);
 
+static void display_delay(uint32_t delay_ms);
+static void display_contrast_control(void);
+
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
@@ -84,10 +92,10 @@ bool display_init(void)
     {
         return false;
     }
-
+    
     display_menu_init(DISPLAY_MENU_ID_WELCOME, 0, display_meniu_cb_welcome);
-    display_menu_init(DISPLAY_MENU_ID_CLOCK, 0, display_meniu_cb_clock);
-    display_menu_init(DISPLAY_MENU_ID_LIGHT, 0, display_meniu_cb_light);
+    display_menu_init(DISPLAY_MENU_ID_CLOCK, 1000, display_meniu_cb_clock);
+    display_menu_init(DISPLAY_MENU_ID_LIGHT, 100, display_meniu_cb_light);
     display_menu_init(DISPLAY_MENU_ID_TEMPERATURE, 0, display_meniu_cb_temperature);
     display_menu_init(DISPLAY_MENU_ID_HUMIDITY, 0, display_meniu_cb_humidity);
 
@@ -119,8 +127,6 @@ void display_thread(void const *arg)
             if(display_menus[id].init == false)
             {
                 ssd1306_fill(SSD1306_COLOR_BLACK);
-                ssd1306_update_screen();
-                osDelay(10);
             }
             if(display_menus[id].cb != NULL)
             {
@@ -128,7 +134,7 @@ void display_thread(void const *arg)
             }
             if(display_menus[id].period)
             {
-                osDelay(display_menus[id].period);
+                display_delay(display_menus[id].period);
             }
             else
             {
@@ -138,18 +144,18 @@ void display_thread(void const *arg)
         }
         else
         {
-            osDelay(10);
+            display_delay(100);
         }
     }
 }
 
 void display_menu_set(display_menu_id_t id)
 {
-    //__disable_irq();
+    __disable_irq();
     display_menu_id = id;
     display_menus[id].enable = true;
     display_menus[id].init = false;
-    //__enable_irq();
+    __enable_irq();
 
     return;
 }
@@ -169,54 +175,68 @@ static void display_menu_init(display_menu_id_t id, uint32_t period, display_cb_
 
 static void display_meniu_cb_welcome(display_menu_id_t id)
 {
-    /*
-    ssd1306_draw_rectangle(2, 11, 128, 64, SSD1306_COLOR_BLACK);
-    ssd1306_update_screen();
-    osDelay(10);
-*/
-    ssd1306_goto_xy(37, 29);
+    ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+
+    ssd1306_goto_xy(37, 23);
     ssd1306_puts((uint8_t *)"Hi ;)", &fonts_11x18, SSD1306_COLOR_WHITE);
+
     ssd1306_update_screen();
-    osDelay(10);
 
     return;
 }
 
 static void display_meniu_cb_clock(display_menu_id_t id)
 {
-    ssd1306_goto_xy(46, 16);
-    ssd1306_puts((uint8_t *)"Clock", &fonts_7x10, SSD1306_COLOR_WHITE);
+    uint8_t tmp[16] = {0};
+    uint32_t timestamp = rtc_get();
+    struct tm clock = {0};
+
+    ConvertRtcTime(timestamp, &clock);
+
+    if(display_menus[id].init == false)
+    {
+        ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+        ssd1306_goto_xy(46, 10);
+        ssd1306_puts((uint8_t *)"Clock", &fonts_7x10, SSD1306_COLOR_WHITE);
+    }
+
+    ssd1306_goto_xy(20, 23);
+    snprintf((char *)tmp, sizeof(tmp), "%02d:%02d:%02d", clock.tm_hour, clock.tm_min, clock.tm_sec);
+    ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
+    ssd1306_goto_xy(29, 44);
+    snprintf((char *)tmp, sizeof(tmp), "%04d-%02d-%02d", clock.tm_year + TM_YEAR_BASE, clock.tm_mon + 1, clock.tm_mday);
+    ssd1306_puts((uint8_t *)tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
     ssd1306_update_screen();
-    osDelay(1);
-    ssd1306_goto_xy(20, 29);
-    ssd1306_puts((uint8_t *)"22:45:00", &fonts_11x18, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-    osDelay(1);
-    ssd1306_goto_xy(29, 50);
-    ssd1306_puts((uint8_t *)"1988-07-19", &fonts_7x10, SSD1306_COLOR_WHITE);
-    ssd1306_update_screen();
-    osDelay(10);
 
     return;
 }
 
 static void display_meniu_cb_light(display_menu_id_t id)
 {
+    uint8_t tmp[16] = {0};
+    uint8_t offset_x = 0;
+    uint16_t light_level = sensors_data.light.value;
+
     if(display_menus[id].init == false)
     {
-        ssd1306_goto_xy(46, 16);
+        ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+        ssd1306_goto_xy(46, 10);
         ssd1306_puts((uint8_t *)"Light", &fonts_7x10, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(1);
-        ssd1306_goto_xy(58, 29);
-        ssd1306_puts((uint8_t *)"?", &fonts_11x18, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(1);
-        ssd1306_goto_xy(56, 50);
+        ssd1306_goto_xy(56, 44);
         ssd1306_puts((uint8_t *)"lx.", &fonts_7x10, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(10);
     }
+
+    snprintf((char *)tmp, 18, "%d", light_level);
+    offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
+    ssd1306_goto_xy(3, 23);
+    ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+    snprintf((char *)tmp, sizeof(tmp), "%d", light_level);
+    ssd1306_goto_xy(offset_x, 23);
+    ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
+
+
+    ssd1306_update_screen();
 
     return;
 }
@@ -225,18 +245,16 @@ static void display_meniu_cb_temperature(display_menu_id_t id)
 {
     if(display_menus[id].init == false)
     {
-        ssd1306_goto_xy(25, 16);
+        ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+
+        ssd1306_goto_xy(25, 10);
         ssd1306_puts((uint8_t *)"Temperature", &fonts_7x10, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(1);
-        ssd1306_goto_xy(58, 29);
+        ssd1306_goto_xy(58, 23);
         ssd1306_puts((uint8_t *)"?", &fonts_11x18, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(1);
-        ssd1306_goto_xy(46, 50);
+        ssd1306_goto_xy(46, 44);
         ssd1306_puts((uint8_t *)"degC.", &fonts_7x10, SSD1306_COLOR_WHITE);
+
         ssd1306_update_screen();
-        osDelay(10);
     }
 
     return;
@@ -246,19 +264,49 @@ static void display_meniu_cb_humidity(display_menu_id_t id)
 {
     if(display_menus[id].init == false)
     {
-        ssd1306_goto_xy(36, 16);
+        ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+
+        ssd1306_goto_xy(36, 10);
         ssd1306_puts((uint8_t *)"Humidity", &fonts_7x10, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(1);
-        ssd1306_goto_xy(58, 29);
+        ssd1306_goto_xy(58, 23);
         ssd1306_puts((uint8_t *)"?", &fonts_11x18, SSD1306_COLOR_WHITE);
-        ssd1306_update_screen();
-        osDelay(1);
-        ssd1306_goto_xy(50, 50);
+        ssd1306_goto_xy(50, 44);
         ssd1306_puts((uint8_t *)"bar.", &fonts_7x10, SSD1306_COLOR_WHITE);
+
         ssd1306_update_screen();
-        osDelay(10);
     }
+
+    return;
+}
+
+static void display_delay(uint32_t delay_ms)
+{
+    static uint32_t c = 0;
+
+    while(delay_ms--)
+    {
+        osDelay(1);
+        c++;
+        if(c > 100)
+        {
+            c = 0;
+            display_contrast_control();
+        }
+    }
+
+    return;
+}
+
+
+static void display_contrast_control(void)
+{
+    uint16_t ligh_level = 128;
+
+    if(sensors_data.light.state == true)
+    {
+        ligh_level = sensors_data.light.value > 255 ? 255 : sensors_data.light.value;
+    }
+    ssd1306_set_contrast(ligh_level);
 
     return;
 }

@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        sensors.h
+ * @file        vhn2sp30.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-09-01
- * @brief       Sensors C header file.
+ * @date        2016-09-12
+ * @brief       H-bridge Motor drive VHN2SP30 C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef SENSORS_H_
-#define SENSORS_H_
+#ifndef VHN2SP30_H_
+#define VHN2SP30_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +27,10 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
+#include <stdint.h>
+
+#include "gpio.h"
+#include "pwm.h"
 
 /**********************************************************************************************************************
  * Exported constants
@@ -42,26 +45,38 @@ extern "C" {
  *********************************************************************************************************************/
 typedef struct
 {
-    struct
-    {
-        bool state;
-        uint16_t value;
-    } light;
-} sensors_data_t;
+    gpio_t in_a;
+    gpio_t in_b;
+    gpio_t en;
+    pwm_id_t pwm;
+    uint8_t cs;
+} vhn2sp30_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
  *********************************************************************************************************************/
-extern volatile sensors_data_t sensors_data;
 
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool sensors_init(void);
-void sensors_thread(void const *arg);
+void vhn2sp30_init(vhn2sp30_t *drive);
+
+void vhn2sp30_brake_vcc(vhn2sp30_t *drive);
+void vhn2sp30_brake_gnd(vhn2sp30_t *drive);
+void vhn2sp30_run_cw(vhn2sp30_t *drive, uint8_t speed);
+void vhn2sp30_run_ccw(vhn2sp30_t *drive, uint8_t speed);
+void vhn2sp30_neutral(vhn2sp30_t *drive);
+
+void vhn2so30_io_cw(vhn2sp30_t *drive);
+void vhn2so30_io_ccw(vhn2sp30_t *drive);
+void vhn2sp30_io_pwm(vhn2sp30_t *drive, uint8_t pwm);
+void vhn2sp30_io_enable(vhn2sp30_t *drive);
+void vhn2sp30_io_disable(vhn2sp30_t *drive);
+uint32_t vhn2sp30_io_cs(vhn2sp30_t *drive);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SENSORS_H_ */
+#endif /* VHN2SP30_H_ */

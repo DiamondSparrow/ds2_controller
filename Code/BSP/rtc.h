@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        sensors.h
+ * @file        rtc.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-09-01
- * @brief       Sensors C header file.
+ * @date        2016-09-29
+ * @brief       Real Time Clock (RTC) C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef SENSORS_H_
-#define SENSORS_H_
+#ifndef RTC_H_
+#define RTC_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +27,7 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
+#include "rtc_ut.h"
 
 /**********************************************************************************************************************
  * Exported constants
@@ -40,28 +40,20 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
-typedef struct
-{
-    struct
-    {
-        bool state;
-        uint16_t value;
-    } light;
-} sensors_data_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
  *********************************************************************************************************************/
-extern volatile sensors_data_t sensors_data;
 
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool sensors_init(void);
-void sensors_thread(void const *arg);
+void rtc_init(void);
+void rtc_set(uint32_t timestamp);
+uint32_t rtc_get(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SENSORS_H_ */
+#endif /* RTC_H_ */

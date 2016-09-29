@@ -31,6 +31,8 @@ extern "C" {
 #include "gpio.h"
 #include "i2c.h"
 #include "pwm.h"
+#include "rtc.h"
+#include "spi.h"
 #include "uart.h"
 
 /**********************************************************************************************************************

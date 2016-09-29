@@ -26,6 +26,8 @@
 
 #include "bsp.h"
 #include "gpio.h"
+#include "spi.h"
+#include "rtc.h"
 #include "uart.h"
 
 /**********************************************************************************************************************
@@ -66,6 +68,8 @@ void bsp_init(void)
     i2c_init();
     uart_0_init();
     pwm_init();
+    rtc_init();
+    spi_0_init();
 
     return;
 }

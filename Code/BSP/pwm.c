@@ -42,54 +42,54 @@ typedef struct
     LPC_SCT_T *sct;
     CHIP_SWM_PIN_MOVABLE_T pin_mov;
     uint8_t pin;
+    uint8_t port;
     uint8_t index;
 } pwm_t;
 
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-static const pwm_t sct_pwm_list[PWM_ID_LAST] =
+static const pwm_t pwm_config[PWM_ID_LAST] =
 {
-    {.sct = LPC_SCT0, .pin_mov = SWM_SCT0_OUT0_O, .pin = 29, .index = 1},
-    {.sct = LPC_SCT0, .pin_mov = SWM_SCT0_OUT1_O, .pin = 9, .index = 2},
+    {.sct = LPC_SCT0, .pin_mov = SWM_SCT0_OUT0_O, .port = 0, .pin = 28, .index = 1},
+    {.sct = LPC_SCT0, .pin_mov = SWM_SCT0_OUT1_O, .port = 0, .pin = 27, .index = 2},
+    {.sct = LPC_SCT2, .pin_mov = SWM_SCT2_OUT0_O, .port = 0, .pin = 16, .index = 1},
+    {.sct = LPC_SCT2, .pin_mov = SWM_SCT2_OUT1_O, .port = 1, .pin = 3,  .index = 2},
 };
 
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
+static void pwm_0_init(void);
+static void pwm_2_init(void);
 
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
-
-/**********************************************************************************************************************
- * Exported functions
- *********************************************************************************************************************/
-void pwm_init(void)
+static void pwm_0_init(void)
 {
-    uint8_t i =0;
-
-    Chip_SCTPWM_Init(LPC_SCT0);
-    Chip_SCTPWM_SetRate(LPC_SCT0, PWM_0_RATE);
+    uint8_t i = 0;
 
     /* Setup Board specific output pin */
     /* Enable SWM clock before altering SWM */
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
-
-    /* Connect SCT outputs to PIO0.x*/
-    for(i = 0; i < PWM_ID_LAST; i++)
+    /* Connect SCT outputs. */
+    for(i = 0; i < 2; i++)
     {
-        Chip_SWM_MovablePinAssign(sct_pwm_list[i].pin_mov, sct_pwm_list[i].pin);
+        Chip_SWM_MovablePortPinAssign(pwm_config[i].pin_mov, pwm_config[i].port, pwm_config[i].pin);
     }
     /* Disable SWM clock after altering SWM */
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
-    for(i = 0; i < PWM_ID_LAST; i++)
+    Chip_SCTPWM_Init(LPC_SCT0);
+    Chip_SCTPWM_SetRate(LPC_SCT0, PWM_0_RATE);
+
+    for(i = 0; i < 2; i++)
     {
         /* Use SCT0_OUT1 pin */
-        Chip_SCTPWM_SetOutPin(sct_pwm_list[i].sct, sct_pwm_list[i].index, i);
+        Chip_SCTPWM_SetOutPin(pwm_config[i].sct, pwm_config[i].index, i);
         /* Start with 0% duty cycle */
-        Chip_SCTPWM_SetDutyCycle(sct_pwm_list[i].sct, sct_pwm_list[i].index, 0);
+        Chip_SCTPWM_SetDutyCycle(pwm_config[i].sct, pwm_config[i].index, 0);
     }
 
     Chip_SCTPWM_Start(LPC_SCT0);
@@ -97,14 +97,67 @@ void pwm_init(void)
     return;
 }
 
+static void pwm_2_init(void)
+{
+    uint8_t i = 0;
+
+    /* Setup Board specific output pin */
+    /* Enable SWM clock before altering SWM */
+    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
+    /* Connect SCT outputs. */
+    for(i = 2; i < 4; i++)
+    {
+        Chip_SWM_MovablePortPinAssign(pwm_config[i].pin_mov, pwm_config[i].port, pwm_config[i].pin);
+    }
+    /* Disable SWM clock after altering SWM */
+    Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
+
+    Chip_SCTPWM_Init(LPC_SCT2);
+    Chip_SCTPWM_SetRate(LPC_SCT2, PWM_2_RATE);
+
+    for(i = 2; i < 4; i++)
+    {
+        /* Use SCT2_OUTx pin. */
+        Chip_SCTPWM_SetOutPin(pwm_config[i].sct, pwm_config[i].index, i - 2);
+        /* Start with 0% duty cycle */
+        Chip_SCTPWM_SetDutyCycle(pwm_config[i].sct, pwm_config[i].index, 0);
+    }
+
+    Chip_SCTPWM_Start(LPC_SCT2);
+
+    return;
+}
+
+
+/**********************************************************************************************************************
+ * Exported functions
+ *********************************************************************************************************************/
+void pwm_init(void)
+{
+    pwm_0_init();
+    pwm_2_init();
+
+
+    return;
+}
+
 uint32_t pwm_get_duty_cycle(pwm_id_t id)
 {
-    return Chip_SCTPWM_GetDutyCycle(sct_pwm_list[id].sct, sct_pwm_list[id].index);
+    return Chip_SCTPWM_GetDutyCycle(pwm_config[id].sct, pwm_config[id].index);
 }
 
 void pwm_set(pwm_id_t id, uint32_t duty_cycle)
 {
-    Chip_SCTPWM_SetDutyCycle(sct_pwm_list[id].sct, sct_pwm_list[id].index, duty_cycle);
+    Chip_SCTPWM_SetDutyCycle(pwm_config[id].sct, pwm_config[id].index, duty_cycle);
+
+    return;
+}
+
+void pwm_set_percentage(pwm_id_t id, uint8_t percentage)
+{
+    uint32_t duty_cycle = Chip_SCTPWM_PercentageToTicks(pwm_config[id].sct, percentage);
+
+    Chip_SCTPWM_SetDutyCycle(pwm_config[id].sct, pwm_config[id].index, duty_cycle);
 
     return;
 }

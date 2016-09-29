@@ -31,7 +31,8 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define PWM_0_RATE    50  //!< PWM frequency in Hz.
+#define PWM_0_RATE    50    //!< PWM frequency in Hz.
+#define PWM_2_RATE    500 //!< PWM frequency in Hz.
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -42,9 +43,11 @@ extern "C" {
  *********************************************************************************************************************/
 typedef enum
 {
-    PWM_ID_PAN  = 0,//!< PWM_ID_PAN
-    PWM_ID_TILT = 1,//!< PWM_ID_TILT
-    PWM_ID_LAST,    //!< PWM_ID_LAST
+    PWM_ID_PAN          = 0, //!< Servo pan.
+    PWM_ID_TILT         = 1, //!< Servo tilt.
+    PWM_ID_MOTOR_LEFT   = 2, //!< Motor left
+    PWM_ID_MOTOR_RIGHT  = 3, //!< Motor right
+    PWM_ID_LAST,             //!< Last should stay last.
 } pwm_id_t;
 
 /**********************************************************************************************************************
@@ -57,6 +60,7 @@ typedef enum
 void pwm_init(void);
 uint32_t pwm_get_duty_cycle(pwm_id_t id);
 void pwm_set(pwm_id_t id, uint32_t duty_cycle);
+void pwm_set_percentage(pwm_id_t id, uint8_t percentage);
 
 #ifdef __cplusplus
 }

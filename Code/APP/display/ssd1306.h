@@ -27,6 +27,8 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdbool.h>
+
 #include "fonts.h"
 
 /**********************************************************************************************************************
@@ -39,12 +41,14 @@ extern "C" {
 #endif
 /** SSD1306 width in pixels */
 #ifndef SSD1306_WIDTH
-#define SSD1306_WIDTH           130
+#define SSD1306_WIDTH           128
 #endif
 /** SSD1306 LCD height in pixels */
 #ifndef SSD1306_HEIGHT
 #define SSD1306_HEIGHT          64
 #endif
+
+#define SSD1306_DRV_MODE        0   //!< Driver mode: 0 - SPI, 1 - I2C
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -58,8 +62,8 @@ extern "C" {
  */
 typedef enum
 {
-    SSD1306_COLOR_BLACK = 0x00, /*!< Black color, no pixel */
-    SSD1306_COLOR_WHITE = 0x01, /*!< Pixel is set. Color depends on display */
+    SSD1306_COLOR_BLACK = 0x01, /*!< Black color, no pixel */
+    SSD1306_COLOR_WHITE = 0x00, /*!< Pixel is set. Color depends on display */
 } ssd1306_color_t;
 
 /**********************************************************************************************************************
@@ -76,7 +80,7 @@ typedef enum
  * @retval  0   Failed, Display was not detected on I2C port.
  * @retval  1   Success, display initialized OK and ready to use.
  */
-uint8_t ssd1306_init(void);
+bool ssd1306_init(void);
 
 /**
  * @brief   Power on display.
@@ -87,6 +91,20 @@ void ssd1306_power_on(void);
  * @brief   Power off display.
  */
 void ssd1306_power_off(void);
+
+void ssd1306_display_invert(void);
+void ssd1306_display_normal(void);
+void ssd1306_set_contrast(uint8_t contrast);
+
+/**
+ * @brief   Flip the horizontal orientation of the screen.
+ */
+void ss1306_orientation_flip_h(void);
+
+/**
+ * @brief   Flip the vertical orientation of the screen.
+ */
+void ss1306_orientation_flip_v(void);
 
 /**
  * @brief   Updates buffer from internal RAM to display.

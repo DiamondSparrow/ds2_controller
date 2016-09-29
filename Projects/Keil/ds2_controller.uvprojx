@@ -447,6 +447,31 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>APP/Motor</GroupName>
+          <Files>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\motor\motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>vhn2sp30.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\motor\vhn2sp30.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>APP/Radio</GroupName>
+          <Files>
+            <File>
+              <FileName>nrf24l01.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\radio\nrf24l01.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>APP/Sensors</GroupName>
           <Files>
             <File>
@@ -508,6 +533,11 @@
               <FileName>pwm.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\BSP\pwm.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\rtc.c</FilePath>
             </File>
             <File>
               <FileName>spi.c</FileName>

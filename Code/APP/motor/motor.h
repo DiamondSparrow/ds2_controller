@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        sensors.h
+ * @file        motor.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-09-01
- * @brief       Sensors C header file.
+ * @date        2016-09-12
+ * @brief       Motor control C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef SENSORS_H_
-#define SENSORS_H_
+#ifndef MOTOR_H_
+#define MOTOR_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +27,6 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdbool.h>
 
 /**********************************************************************************************************************
  * Exported constants
@@ -40,28 +39,33 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
-typedef struct
+typedef enum
 {
-    struct
-    {
-        bool state;
-        uint16_t value;
-    } light;
-} sensors_data_t;
+    MOTOR_ID_LEFT,
+    MOTOR_ID_RIGHT,
+    MOTOR_ID_LAST,
+} motor_id_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
  *********************************************************************************************************************/
-extern volatile sensors_data_t sensors_data;
 
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool sensors_init(void);
-void sensors_thread(void const *arg);
+bool motor_init(void);
+void motor_thread(void const *arg);
+
+void motor_ramp_set(uint16_t ramp);
+void motor_forward(motor_id_t motor, uint8_t speed);
+void motor_backward(motor_id_t motor, uint8_t speed);
+void motor_brake(motor_id_t motor);
+void motor_neutral(motor_id_t motor);
+void motor_test(motor_id_t motor, uint8_t ramp);
+void motor_test_ramp(motor_id_t motor, uint8_t ramp);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SENSORS_H_ */
+#endif /* MOTOR_H_ */
