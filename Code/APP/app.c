@@ -36,6 +36,7 @@
 #include "display/display.h"
 #include "display/ssd1306.h"
 #include "motor/motor.h"
+#include "sensors/am2301.h"
 #include "sensors/sensors.h"
 #include "servo/servo.h"
 #include "ultrasonic/ultrasonic.h"
@@ -48,7 +49,7 @@
  * Private definitions and macros
  *********************************************************************************************************************/
 /** Define application thread */
-osThreadDef(app_thread, osPriorityNormal, 1, 256);
+osThreadDef(app_thread, osPriorityNormal, 1, 512);
 
 /**********************************************************************************************************************
  * Private typedef

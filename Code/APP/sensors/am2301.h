@@ -31,8 +31,8 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define AM2301_PORT             0
-#define AM2301_PIN              16
+#define AM2301_PORT             1
+#define AM2301_PIN              8
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -50,7 +50,7 @@ typedef enum
     AM2301_OK                   = 0,    //!< Data OK.
     AM2301_ERROR                = 1,    //!< An error occurred.
     AM2301_CONNECTION_ERROR     = 2,    //!< Device is not connected.
-    AM2301_WAITHIGH_ERROR       = 3,    //!<Wait high pulse timeout.
+    AM2301_WAITHIGH_ERROR       = 3,    //!< Wait high pulse timeout.
     AM2301_WAITLOW_ERROR        = 4,    //!< Wait low pulse timeout.
     AM2301_WAITHIGH_LOOP_ERROR  = 5,    //!< Loop error for high pulse.
     AM2301_WAITLOW_LOOP_ERROR   = 6,    //!< Loop error for low pulse.
@@ -83,7 +83,7 @@ am2301_ret_t am2301_init(void);
 
  * @return  State of read. See @ref am2301_ret_t.
  */
-am2301_ret_t am2301_read(am2301_data_t* data);
+am2301_ret_t am2301_read(am2301_data_t *data);
 
 /**********************************************************************************************************************
  * Prototypes of exported functions

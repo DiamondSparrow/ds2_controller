@@ -94,10 +94,10 @@ bool display_init(void)
     }
     
     display_menu_init(DISPLAY_MENU_ID_WELCOME, 0, display_meniu_cb_welcome);
-    display_menu_init(DISPLAY_MENU_ID_CLOCK, 1000, display_meniu_cb_clock);
+    display_menu_init(DISPLAY_MENU_ID_CLOCK, 100, display_meniu_cb_clock);
     display_menu_init(DISPLAY_MENU_ID_LIGHT, 100, display_meniu_cb_light);
-    display_menu_init(DISPLAY_MENU_ID_TEMPERATURE, 0, display_meniu_cb_temperature);
-    display_menu_init(DISPLAY_MENU_ID_HUMIDITY, 0, display_meniu_cb_humidity);
+    display_menu_init(DISPLAY_MENU_ID_TEMPERATURE, 100, display_meniu_cb_temperature);
+    display_menu_init(DISPLAY_MENU_ID_HUMIDITY, 100, display_meniu_cb_humidity);
 
     display_menu_set(DISPLAY_MENU_ID_WELCOME);
 
@@ -216,7 +216,7 @@ static void display_meniu_cb_light(display_menu_id_t id)
 {
     uint8_t tmp[16] = {0};
     uint8_t offset_x = 0;
-    uint16_t light_level = sensors_data.light.value;
+    uint16_t value = sensors_data.light.value;
 
     if(display_menus[id].init == false)
     {
@@ -227,14 +227,13 @@ static void display_meniu_cb_light(display_menu_id_t id)
         ssd1306_puts((uint8_t *)"lx.", &fonts_7x10, SSD1306_COLOR_WHITE);
     }
 
-    snprintf((char *)tmp, 18, "%d", light_level);
+    snprintf((char *)tmp, 18, "%d", value);
     offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
     ssd1306_goto_xy(3, 23);
     ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
-    snprintf((char *)tmp, sizeof(tmp), "%d", light_level);
+    snprintf((char *)tmp, sizeof(tmp), "%d", value);
     ssd1306_goto_xy(offset_x, 23);
     ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
-
 
     ssd1306_update_screen();
 
@@ -243,38 +242,57 @@ static void display_meniu_cb_light(display_menu_id_t id)
 
 static void display_meniu_cb_temperature(display_menu_id_t id)
 {
+    uint8_t tmp[16] = {0};
+    uint8_t offset_x = 0;
+    uint16_t value = sensors_data.temperature.value;
+
     if(display_menus[id].init == false)
     {
         ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
-
         ssd1306_goto_xy(25, 10);
         ssd1306_puts((uint8_t *)"Temperature", &fonts_7x10, SSD1306_COLOR_WHITE);
-        ssd1306_goto_xy(58, 23);
-        ssd1306_puts((uint8_t *)"?", &fonts_11x18, SSD1306_COLOR_WHITE);
-        ssd1306_goto_xy(46, 44);
+        ssd1306_goto_xy(48, 44);
         ssd1306_puts((uint8_t *)"degC.", &fonts_7x10, SSD1306_COLOR_WHITE);
-
-        ssd1306_update_screen();
     }
+
+    snprintf((char *)tmp, 18, "%d", value);
+    offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
+    ssd1306_goto_xy(3, 23);
+    ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+    snprintf((char *)tmp, sizeof(tmp), "%d", value);
+    ssd1306_goto_xy(offset_x, 23);
+    ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
+
+    ssd1306_update_screen();
 
     return;
 }
 
 static void display_meniu_cb_humidity(display_menu_id_t id)
 {
+    uint8_t tmp[16] = {0};
+    uint8_t offset_x = 0;
+    uint16_t value = sensors_data.humidity.value;
+
     if(display_menus[id].init == false)
     {
         ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
 
         ssd1306_goto_xy(36, 10);
         ssd1306_puts((uint8_t *)"Humidity", &fonts_7x10, SSD1306_COLOR_WHITE);
-        ssd1306_goto_xy(58, 23);
-        ssd1306_puts((uint8_t *)"?", &fonts_11x18, SSD1306_COLOR_WHITE);
-        ssd1306_goto_xy(50, 44);
-        ssd1306_puts((uint8_t *)"bar.", &fonts_7x10, SSD1306_COLOR_WHITE);
+        ssd1306_goto_xy(60, 44);
+        ssd1306_puts((uint8_t *)"%", &fonts_7x10, SSD1306_COLOR_WHITE);
 
-        ssd1306_update_screen();
     }
+    snprintf((char *)tmp, 18, "%d", value);
+    offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
+    ssd1306_goto_xy(3, 23);
+    ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+    snprintf((char *)tmp, sizeof(tmp), "%d", value);
+    ssd1306_goto_xy(offset_x, 23);
+    ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
+
+    ssd1306_update_screen();
 
     return;
 }

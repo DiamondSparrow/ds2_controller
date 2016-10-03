@@ -26,9 +26,11 @@
 #include "sensors/sensors.h"
 #include "sensors/bh1750.h"
 #include "sensors/am2301.h"
+#include "sensors/dht11.h"
 
 #include "display/display.h"
 
+#include "debug.h"
 #include "cmsis_os.h"
 
 /**********************************************************************************************************************
@@ -71,6 +73,7 @@ bool sensors_init(void)
     {
         return false;
     }
+    dht11_init();
 
     // Create display thread.
     if((sensors_thread_id = osThreadCreate(osThread(sensors_thread), NULL)) == NULL)
@@ -85,15 +88,49 @@ bool sensors_init(void)
 
 void sensors_thread(void const *arg)
 {
-    osDelay(2000);
+    dht11_data_t dht11_data = {0};
+    uint16_t light = 0;
+    osDelay(100);
 
     while(1)
     {
-        osDelay(150);
         if(sensors_data.light.state)
         {
-            sensors_data.light.value = bh1750_read_level();
+            light = bh1750_read_level();
+            if(light != UINT16_MAX)
+            {
+                sensors_data.light.value = light;
+            }
+            else
+            {
+                sensors_data.light.state = false;
+            }
         }
+        else
+        {
+            sensors_data.light.state = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
+        }
+        osDelay(1);
+        if(dht11_read(&dht11_data) == true)
+        {
+            sensors_data.humidity.state = true;
+            sensors_data.humidity.value = dht11_data.humidity;
+            sensors_data.temperature.state = true;
+            sensors_data.temperature.value = dht11_data.temperature;
+        }
+        else
+        {
+            dht11_init();
+            sensors_data.humidity.state = false;
+            sensors_data.temperature.state = false;
+        }
+        /*
+        DEBUG("Sensors data: %d,%d; %d,%d; %d,%d;",
+            sensors_data.light.state, sensors_data.light.value,
+            sensors_data.humidity.state, sensors_data.humidity.value,
+            sensors_data.temperature.state, sensors_data.temperature.value);
+        */
+        osDelay(100);
     }
 }
 

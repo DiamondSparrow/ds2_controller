@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        sensors.h
+ * @file        dht11.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-09-01
- * @brief       Sensors C header file.
+ * @date        2016-10-03
+ * @brief       This is C header file template.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef SENSORS_H_
-#define SENSORS_H_
+#ifndef DHT11_H_
+#define DHT11_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,11 +27,14 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdint.h>
 #include <stdbool.h>
 
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
+#define DHT11_PORT             1
+#define DHT11_PIN              8
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -40,38 +43,40 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+/**
+ * @brief  DHT11 main data structure
+ */
 typedef struct
 {
-    struct
-    {
-        bool state;
-        uint16_t value;
-    } light;
-    struct
-    {
-        bool state;
-        int16_t value;
-    } temperature;
-    struct
-    {
-        bool state;
-        uint16_t value;
-    } humidity;
-} sensors_data_t;
+    int16_t temperature;    /**< Temperature in tenths of degrees. If real temperature is 27.3°C, this variable's value is 273. */
+    uint16_t humidity;      /**< Humidity in tenths of percent. If real humidity is 55.5%, this variable's value is 555. */
+} dht11_data_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
  *********************************************************************************************************************/
-extern volatile sensors_data_t sensors_data;
 
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool sensors_init(void);
-void sensors_thread(void const *arg);
+/**
+ * @brief  Initializes DHT11 sensor.
+ */
+void dht11_init(void);
+
+/**
+ * @brief   Reads data from sensor
+ *
+ * @param   data    Pointer to data structure to store data into. See @ref dht11_data_t.
+
+ * @return  State of read.
+ * @retval  0   failed.
+ * @retval  1   success.
+ */
+bool dht11_read(dht11_data_t *data);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SENSORS_H_ */
+#endif /* DHT11_H_ */

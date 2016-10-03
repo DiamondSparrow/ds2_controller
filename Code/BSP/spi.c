@@ -87,7 +87,7 @@ void spi_0_init(void)
     // Initialize SPI Block.
     Chip_SPI_Init(LPC_SPI0);
     // Set SPI Config register.
-    spi_cfg.ClkDiv      = 16;               // Set Clock divider to maximum
+    spi_cfg.ClkDiv      = 4;               // Set Clock divider to maximum
     spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
     spi_cfg.ClockMode   = SPI_CLOCK_MODE0;      // Enable Mode 0
     spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
@@ -95,11 +95,13 @@ void spi_0_init(void)
     spi_cfg.SSELPol     = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
     Chip_SPI_SetConfig(LPC_SPI0, &spi_cfg);
     // Set Delay register.
+    
     spi_delay_cfg.PreDelay      = 8;
     spi_delay_cfg.PostDelay     = 8;
     spi_delay_cfg.FrameDelay    = 8;
     spi_delay_cfg.TransferDelay = 8;
     Chip_SPI_DelayConfig(LPC_SPI0, &spi_delay_cfg);
+    
 
     // Enable SPI0.
     Chip_SPI_Enable(LPC_SPI0);
