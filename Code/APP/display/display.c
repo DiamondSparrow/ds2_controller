@@ -216,7 +216,7 @@ static void display_meniu_cb_light(display_menu_id_t id)
 {
     uint8_t tmp[16] = {0};
     uint8_t offset_x = 0;
-    uint16_t value = sensors_data.light.value;
+    uint16_t value = sensors_data.light.value_lp;
 
     if(display_menus[id].init == false)
     {
@@ -230,7 +230,7 @@ static void display_meniu_cb_light(display_menu_id_t id)
     snprintf((char *)tmp, 18, "%d", value);
     offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
     ssd1306_goto_xy(3, 23);
-    ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+    ssd1306_puts((uint8_t *)"            ", &fonts_11x18, SSD1306_COLOR_WHITE);
     snprintf((char *)tmp, sizeof(tmp), "%d", value);
     ssd1306_goto_xy(offset_x, 23);
     ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
@@ -258,7 +258,7 @@ static void display_meniu_cb_temperature(display_menu_id_t id)
     snprintf((char *)tmp, 18, "%d", value);
     offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
     ssd1306_goto_xy(3, 23);
-    ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+    ssd1306_puts((uint8_t *)"            ", &fonts_11x18, SSD1306_COLOR_WHITE);
     snprintf((char *)tmp, sizeof(tmp), "%d", value);
     ssd1306_goto_xy(offset_x, 23);
     ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
@@ -287,7 +287,7 @@ static void display_meniu_cb_humidity(display_menu_id_t id)
     snprintf((char *)tmp, 18, "%d", value);
     offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
     ssd1306_goto_xy(3, 23);
-    ssd1306_puts("            ", &fonts_11x18, SSD1306_COLOR_WHITE);
+    ssd1306_puts((uint8_t *)"            ", &fonts_11x18, SSD1306_COLOR_WHITE);
     snprintf((char *)tmp, sizeof(tmp), "%d", value);
     ssd1306_goto_xy(offset_x, 23);
     ssd1306_puts((uint8_t *)tmp, &fonts_11x18, SSD1306_COLOR_WHITE);
@@ -315,14 +315,15 @@ static void display_delay(uint32_t delay_ms)
     return;
 }
 
-
 static void display_contrast_control(void)
 {
     uint16_t ligh_level = 128;
 
     if(sensors_data.light.state == true)
     {
-        ligh_level = sensors_data.light.value > 255 ? 255 : sensors_data.light.value;
+        ligh_level = (sensors_data.light.value_lp * 256 / 512);
+        ligh_level = ligh_level > 255 ? 255 : ligh_level;
+        //ligh_level = sensors_data.light.value_lp > 255 ? 255 : sensors_data.light.value_lp;
     }
     ssd1306_set_contrast(ligh_level);
 

@@ -490,6 +490,11 @@
               <FilePath>..\..\Code\APP\sensors\dht11.c</FilePath>
             </File>
             <File>
+              <FileName>filters.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\sensors\filters.c</FilePath>
+            </File>
+            <File>
               <FileName>sensors.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\APP\sensors\sensors.c</FilePath>

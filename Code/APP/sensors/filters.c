@@ -1,9 +1,9 @@
 /**
  **********************************************************************************************************************
- * @file         sensors.c
+ * @file         filters.c
  * @author       Diamond Sparrow
  * @version      1.0.0.0
- * @date         2016-09-01
+ * @date         2016-10-04
  * @brief        This is C source file template.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
@@ -21,17 +21,8 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
-#include <stdbool.h>
 
-#include "sensors/sensors.h"
-
-#include "sensors/bh1750.h"
-#include "sensors/am2301.h"
-#include "sensors/dht11.h"
-#include "sensors/filters.h"
-
-#include "debug.h"
-#include "cmsis_os.h"
+#include "filters.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -40,8 +31,6 @@
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-/** Define application thread */
-osThreadDef(sensors_thread, osPriorityNormal, 1, 1024);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -50,10 +39,6 @@ osThreadDef(sensors_thread, osPriorityNormal, 1, 1024);
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/** Display thread ID. */
-osThreadId sensors_thread_id;
-filters_low_pass_t sensors_light_lp_filter = {0};
-volatile sensors_data_t sensors_data = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -66,72 +51,49 @@ volatile sensors_data_t sensors_data = {0};
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-bool sensors_init(void)
-{
-    sensors_data.light.state = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
-    dht11_init();
-
-    // Create sensors thread.
-    if((sensors_thread_id = osThreadCreate(osThread(sensors_thread), NULL)) == NULL)
-    {
-        // Failed to create a thread.
-        return false;
-    }
-
-    return true;
-}
-
-
-void sensors_thread(void const *arg)
-{
-    dht11_data_t dht11_data = {0};
-    uint16_t light = 0;
-
-    osDelay(10);
-
-    while(1)
-    {
-        if(sensors_data.light.state)
-        {
-            light = bh1750_read_level();
-            if(light != UINT16_MAX)
-            {
-                sensors_data.light.value = light;
-                sensors_data.light.value_lp = (uint16_t)filter_low_pass(&sensors_light_lp_filter, (double)light, 0.25);
-            }
-            else
-            {
-                sensors_data.light.state = false;
-            }
-        }
-        else
-        {
-            sensors_data.light.state = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
-        }
-        osDelay(1);
-        if(dht11_read(&dht11_data) == true)
-        {
-            sensors_data.humidity.state = true;
-            sensors_data.humidity.value = dht11_data.humidity;
-            sensors_data.temperature.state = true;
-            sensors_data.temperature.value = dht11_data.temperature;
-        }
-        else
-        {
-            dht11_init();
-            sensors_data.humidity.state = false;
-            sensors_data.temperature.state = false;
-        }
-        /*
-        DEBUG("Sensors data: %d,%d; %d,%d; %d,%d;",
-            sensors_data.light.state, sensors_data.light.value,
-            sensors_data.humidity.state, sensors_data.humidity.value,
-            sensors_data.temperature.state, sensors_data.temperature.value);
-        */
-        osDelay(100);
-    }
-}
 
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+filters_kalman_t filter_kalman_init(double proc_noise_cov, double meas_noise_cov, double est_error, double value)
+{
+    filters_kalman_t result = {0};
+
+    result.process_noise_cov        = proc_noise_cov;
+    result.measurement_noise_cov    = meas_noise_cov;
+    result.estimation_error         = est_error;
+    result.value                    = value;
+
+    return result;
+}
+
+double filters_kalman_update(filters_kalman_t *data, double input)
+{
+    // Prediction update. Omit x = x.
+    data->estimation_error = data->estimation_error + data->process_noise_cov;
+
+    // Measurement update
+    data->gain = data->estimation_error / (data->estimation_error + data->measurement_noise_cov);
+    data->value = data->value + data->gain * (input - data->value);
+    data->estimation_error = (1 - data->gain) * data->estimation_error;
+
+    return data->value;
+}
+
+double filter_low_pass(filters_low_pass_t *data, double input, double cut_off)
+{
+    data->input = input;
+    data->cut_off = cut_off;
+    data->output = data->output + (data->cut_off * (data->input - data->output));
+
+    return data->output;
+}
+
+double filter_high_pass(filters_high_pass_t *data, double input, double cut_off)
+{
+    data->input = input;
+    data->cut_off = cut_off;
+    data->output = data->input - (data->output + data->cut_off * (data->input - data->output));
+
+    return data->output;
+}

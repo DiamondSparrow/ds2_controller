@@ -54,7 +54,7 @@
  * Private variables
  *********************************************************************************************************************/
 /* SSD1306 data buffer */
-static uint8_t ssd1306_buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8];
+static uint8_t ssd1306_buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8 + 1];
 
 typedef struct {
     uint16_t current_x;

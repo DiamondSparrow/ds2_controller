@@ -141,12 +141,12 @@ void app_thread(void const *arg)
     DEBUG_INIT("Servo ....... ok.");
     ultrasonic_init();
     DEBUG_INIT("Ultrasonic .. ok.");
-    ret = display_init();
-    DEBUG_INIT("Display ..... %s.", ret == false ? "err" : "ok");
     ret = sensors_init();
     DEBUG_INIT("Sensors ..... %s.", ret == false ? "err" : "ok");
     ret = motor_init();
     DEBUG_INIT("Motor ....... %s.", ret == false ? "err" : "ok");
+    ret = display_init();
+    DEBUG_INIT("Display ..... %s.", ret == false ? "err" : "ok");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
