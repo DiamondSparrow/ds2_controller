@@ -179,6 +179,9 @@ void app_thread(void const *arg)
             sw1 = false;
         }
         osDelay(100);
+        DEBUG("ADC: %d, %d, %d;", adc_get_value_volt(ADC_ID_TEMPERATURE), adc_get_value_volt(ADC_ID_MOTOR_LEFT_CURR), adc_get_value_volt(ADC_ID_MOTOR_RIGHT_CURR));
+        DEBUG("TEMP: %.02f;", adc_get_temperature());
+        osDelay(400);
     }
 }
 

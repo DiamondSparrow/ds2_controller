@@ -525,6 +525,11 @@
           <GroupName>BSP</GroupName>
           <Files>
             <File>
+              <FileName>adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\adc.c</FilePath>
+            </File>
+            <File>
               <FileName>bsp.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\BSP\bsp.c</FilePath>

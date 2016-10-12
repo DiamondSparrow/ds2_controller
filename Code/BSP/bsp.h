@@ -28,6 +28,8 @@ extern "C" {
  * Includes
  *********************************************************************************************************************/
 #include "chip.h"
+
+#include "adc.h"
 #include "gpio.h"
 #include "i2c.h"
 #include "pwm.h"

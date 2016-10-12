@@ -43,8 +43,8 @@ extern "C" {
  *********************************************************************************************************************/
 typedef enum
 {
-    PWM_ID_PAN          = 0, //!< Servo pan.
-    PWM_ID_TILT         = 1, //!< Servo tilt.
+    PWM_ID_SERVO_PAN    = 0, //!< Servo pan.
+    PWM_ID_SERVO_TILT   = 1, //!< Servo tilt.
     PWM_ID_MOTOR_LEFT   = 2, //!< Motor left
     PWM_ID_MOTOR_RIGHT  = 3, //!< Motor right
     PWM_ID_LAST,             //!< Last should stay last.

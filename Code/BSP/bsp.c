@@ -25,6 +25,7 @@
 #include "chip.h"
 
 #include "bsp.h"
+#include "adc.h"
 #include "gpio.h"
 #include "spi.h"
 #include "rtc.h"
@@ -65,6 +66,7 @@ void bsp_init(void)
     Chip_SYSCTL_PeriphReset(RESET_IOCON);
 
     gpio_init();
+    adc_init();
     i2c_init();
     uart_0_init();
     pwm_init();
