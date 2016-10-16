@@ -45,6 +45,7 @@
 /* SPI Transfer Setup */
 static SPI_DATA_SETUP_T spi_0_xfer;
 static uint16_t spi_0_tx_buffer[128] = {0};
+static uint16_t spi_0_rx_buffer[128] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -87,7 +88,7 @@ void spi_0_init(void)
     // Initialize SPI Block.
     Chip_SPI_Init(LPC_SPI0);
     // Set SPI Config register.
-    spi_cfg.ClkDiv      = 4;               // Set Clock divider to maximum
+    spi_cfg.ClkDiv      = 4;                    // Set Clock divider to maximum
     spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
     spi_cfg.ClockMode   = SPI_CLOCK_MODE0;      // Enable Mode 0
     spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
@@ -109,21 +110,33 @@ void spi_0_init(void)
     return;
 }
 
-uint8_t spi_0_read_byte(uint8_t byte)
-{
-    LPC_SPI0->TXDAT = byte;
-    while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_TXRDY));
-
-    return LPC_SPI0->RXDAT;
-}
-
 void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
 {
     uint16_t i = 0;
+    uint16_t j = 0;
 
-    for(i = 0; i < size; i++)
+    spi_0_xfer.pTx = NULL;              /* Transmit Buffer */
+    spi_0_xfer.pRx = spi_0_rx_buffer;   /* Receive Buffer */
+    spi_0_xfer.DataSize = 8;            /* Data size in bits */
+    spi_0_xfer.Length = size;           /* Total frame length */
+    /* Assert only SSEL0 */
+    spi_0_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
+    spi_0_xfer.TxCnt = 0;
+    spi_0_xfer.RxCnt = 0;
+
+    Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+
+    for(i = 1; i < (size + 1); i++)
     {
-        buffer[i] = spi_0_read_byte(0xFF);
+        buffer[i - 1] = spi_0_rx_buffer[j];
+        if(i % 2)
+        {
+            buffer[i - 1] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
+        }
+        else
+        {
+            buffer[i - 1] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
+        }
     }
 
     return;
@@ -131,7 +144,6 @@ void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
 
 void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
 {
-#if 1
     uint16_t i = 0;
     
     for(i = 0; i < size; i++)
@@ -149,22 +161,43 @@ void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
     spi_0_xfer.RxCnt = 0;
 
     Chip_SPI_WriteFrames_Blocking(LPC_SPI0, &spi_0_xfer);
-#else
-    uint16_t i = 0;
-    for(i = 0; i < size; i++)
-    {
-        spi_0_write_byte(buffer[i]);
-    }
-#endif
 
     return;
 }
 
-void spi_0_write_byte(uint8_t byte)
+void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_size)
 {
-    LPC_SPI0->TXDAT = byte;
-    while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_TXRDY));
-    LPC_SPI0->RXDAT;
+    uint16_t i = 0;
+    uint16_t j = 0;
+
+    for(i = 0; i < tx_size; i++)
+    {
+        spi_0_tx_buffer[i] = tx[i];
+    }
+
+    spi_0_xfer.pTx = spi_0_tx_buffer;       /* Transmit Buffer */
+    spi_0_xfer.pRx = spi_0_rx_buffer;       /* Receive Buffer */
+    spi_0_xfer.DataSize = 8;                /* Data size in bits */
+    spi_0_xfer.Length = tx_size + rx_size;  /* Total frame length */
+    /* Assert only SSEL0 */
+    spi_0_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
+    spi_0_xfer.TxCnt = 0;
+    spi_0_xfer.RxCnt = 0;
+
+    Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+
+    for(i = 1; i < (rx_size + 1); i++)
+    {
+        rx[i - 1] = spi_0_rx_buffer[j];
+        if(i % 2)
+        {
+            rx[i - 1] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
+        }
+        else
+        {
+            rx[i - 1] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
+        }
+    }
 
     return;
 }

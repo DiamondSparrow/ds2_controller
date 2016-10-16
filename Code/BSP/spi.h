@@ -48,10 +48,9 @@ extern "C" {
  * Prototypes of exported functions
  *********************************************************************************************************************/
 void spi_0_init(void);
-uint8_t spi_0_read_byte(uint8_t byte);
 void spi_0_read_buffer(uint8_t *buffer, uint16_t size);
-void spi_0_write_byte(uint8_t byte);
 void spi_0_write_buffer(uint8_t *buffer, uint16_t size);
+void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_size);
 
 #ifdef __cplusplus
 }

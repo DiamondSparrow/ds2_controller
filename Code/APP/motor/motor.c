@@ -23,9 +23,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "motor.h"
-#include "vhn2sp30.h"
-
+#include "motor/motor.h"
+#include "motor/vhn2sp30.h"
+#include "sensors/filters.h"
 #include "cmsis_os.h"
 #include "debug.h"
 
@@ -44,8 +44,13 @@ osThreadDef(motor_thread, osPriorityNormal, 1, 256);
 typedef struct
 {
     vhn2sp30_t drive;
-    int16_t target;
-    int16_t current;
+    struct
+    {
+        int16_t target;
+        int16_t current;
+    } speed;
+    uint16_t current;
+    filters_low_pass_t cs_filter;
 } motor_data_t;
 
 /**********************************************************************************************************************
@@ -66,9 +71,14 @@ motor_data_t motor_data[MOTOR_ID_LAST] =
             .in_b = GPIO_MOTOR_LEFT_INB,
             .en = GPIO_MOTOR_LEFT_EN,
             .pwm = PWM_ID_MOTOR_LEFT,
-            .cs = 0
+            .cs = ADC_ID_MOTOR_LEFT_CURR,
         },
-        .target = 0, .current = 0,
+        .speed =
+        {
+            .target = 0,
+            .current = 0,
+        },
+        .current = 0,
     },
     // MOTOR_ID_RIGHT
     {
@@ -78,9 +88,14 @@ motor_data_t motor_data[MOTOR_ID_LAST] =
             .in_b = GPIO_MOTOR_RIGHT_INB,
             .en = GPIO_MOTOR_RIGHT_EN,
             .pwm = PWM_ID_MOTOR_RIGHT,
-            .cs = 0
+            .cs = ADC_ID_MOTOR_RIGHT_CURR
         },
-        .target = 0, .current = 0,
+        .speed =
+        {
+            .target = 0,
+            .current = 0,
+        },
+        .current = 0,
     },
 };
 
@@ -121,25 +136,28 @@ void motor_thread(void const *arg)
         {
             for(i = 0; i < MOTOR_ID_LAST; i++)
             {
-                if(motor_data[i].target > motor_data[i].current)
+                motor_data[i].current = vhn2sp30_io_cs(&motor_data[i].drive);
+                filter_low_pass(&motor_data[i].cs_filter, motor_data[i].current, 0.4);
+
+                if(motor_data[i].speed.target > motor_data[i].speed.current)
                 {
-                    motor_data[i].current++;
+                    motor_data[i].speed.current++;
                 }
-                else if(motor_data[i].target < motor_data[i].current)
+                else if(motor_data[i].speed.target < motor_data[i].speed.current)
                 {
-                    motor_data[i].current--;
+                    motor_data[i].speed.current--;
                 }
                 else
                 {
                     continue;
                 }
-                if(motor_data[i].current > 0)
+                if(motor_data[i].speed.current > 0)
                 {
-                    vhn2sp30_run_cw(&motor_data[i].drive, motor_data[i].current);
+                    vhn2sp30_run_cw(&motor_data[i].drive, motor_data[i].speed.current);
                 }
-                else if (motor_data[i].current < 0)
+                else if (motor_data[i].speed.current < 0)
                 {
-                    vhn2sp30_run_ccw(&motor_data[i].drive, motor_data[i].current * (-1));
+                    vhn2sp30_run_ccw(&motor_data[i].drive, motor_data[i].speed.current * (-1));
                 }
                 else
                 {
@@ -168,13 +186,13 @@ void motor_forward(motor_id_t motor, uint8_t speed)
 
     if(motor_ramp == 0)
     {
-        motor_data[motor].target = speed;
-        motor_data[motor].current = speed;
+        motor_data[motor].speed.target = speed;
+        motor_data[motor].speed.current = speed;
         vhn2sp30_run_cw(&motor_data[motor].drive, speed);
     }
     else
     {
-        motor_data[motor].target = speed;
+        motor_data[motor].speed.target = speed;
     }
 
     return;
@@ -186,13 +204,13 @@ void motor_backward(motor_id_t motor, uint8_t speed)
 
     if(motor_ramp == 0)
     {
-        motor_data[motor].target = speed;
-        motor_data[motor].current = speed;
+        motor_data[motor].speed.target = speed;
+        motor_data[motor].speed.current = speed;
         vhn2sp30_run_ccw(&motor_data[motor].drive, speed);
     }
     else
     {
-        motor_data[motor].target = speed * (-1);
+        motor_data[motor].speed.target = speed * (-1);
     }
 
     return;
@@ -200,8 +218,8 @@ void motor_backward(motor_id_t motor, uint8_t speed)
 
 void motor_brake(motor_id_t motor)
 {
-    motor_data[motor].target = 0;
-    motor_data[motor].current = 0;
+    motor_data[motor].speed.target = 0;
+    motor_data[motor].speed.current = 0;
     vhn2sp30_brake_vcc(&motor_data[motor].drive);
 
     return;
@@ -209,8 +227,8 @@ void motor_brake(motor_id_t motor)
 
 void motor_neutral(motor_id_t motor)
 {
-    motor_data[motor].target = 0;
-    motor_data[motor].current = 0;
+    motor_data[motor].speed.target = 0;
+    motor_data[motor].speed.current = 0;
     vhn2sp30_brake_gnd(&motor_data[motor].drive);
 
     return;
@@ -280,6 +298,21 @@ void motor_test_ramp(motor_id_t motor, uint8_t ramp)
     motor_test(motor, ramp * 2);
 
     return;
+}
+
+int16_t motor_get_speed_target(motor_id_t motor)
+{
+    return motor_data[motor].speed.target;
+}
+
+int16_t motor_get_speed_current(motor_id_t motor)
+{
+    return motor_data[motor].speed.current;
+}
+
+uint16_t motor_get_current(motor_id_t motor)
+{
+    return (uint16_t)motor_data[motor].cs_filter.output;
 }
 
 /**********************************************************************************************************************

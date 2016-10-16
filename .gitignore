@@ -12,3 +12,8 @@
 /Projects/Keil/*.Diamond
 /.settings
 /Projects/Keil/Objects/*.sct
+
+*.mk
+*.hex
+Debug/makefile
+Projects/Keil/Objects/ds2_controller.hex

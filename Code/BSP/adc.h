@@ -47,6 +47,8 @@ typedef enum
     ADC_ID_TEMPERATURE,         //!< Temperature.
     ADC_ID_MOTOR_LEFT_CURR,     //!< Left motor current
     ADC_ID_MOTOR_RIGHT_CURR,    //!< Right motor current.
+    ADC_ID_JS_X,
+    ADC_ID_JS_Y,
     ADC_ID_LAST,                //!< Last should stay last.
 } adc_id_t;
 

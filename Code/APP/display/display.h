@@ -32,7 +32,7 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-
+#define DISPLAY_EXTRA   0
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
@@ -44,9 +44,14 @@ typedef enum
 {
     DISPLAY_MENU_ID_WELCOME,
     DISPLAY_MENU_ID_CLOCK,
+#if DISPLAY_EXTRA
     DISPLAY_MENU_ID_LIGHT,
     DISPLAY_MENU_ID_TEMPERATURE,
     DISPLAY_MENU_ID_HUMIDITY,
+#endif // DISPLAY_EXTRA
+    DISPLAY_MENU_ID_JOYSTICK,
+    DISPLAY_MENU_ID_MOTOR,
+    DISPLAY_MENU_ID_INFO,
     DISPLAY_MENU_ID_LAST,
 } display_menu_id_t;
 

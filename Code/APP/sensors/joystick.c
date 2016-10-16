@@ -1,17 +1,17 @@
 /**
  **********************************************************************************************************************
- * @file        vhn2sp30.c
- * @author      Diamond Sparrow
- * @version     1.0.0.0
- * @date        2016-09-12
- * @brief       H-bridge Motor drive VHN2SP30 C source file.
+ * @file         joystick.c
+ * @author       Diamond Sparrow
+ * @version      1.0.0.0
+ * @date         2016-10-16
+ * @brief        Joystick C source file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
  *              FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR\n
  *              CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL\n
  *              DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n
- *              drive, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n
+ *              DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\n
  *              CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF\n
  *              THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **********************************************************************************************************************
@@ -21,15 +21,23 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
+#include <stdbool.h>
+#include <math.h>
 
-#include "vhn2sp30.h"
+#include "sensors/joystick.h"
 
+#include "adc.h"
 #include "gpio.h"
-#include "pwm.h"
+
+#include "cmsis_os.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
+#define JOYSTICK_RESOLUTION     1024
+#define JOYSTICK_ADC_RES        4096
+#define JOYSTICK_PI             3.14159265358979f
+#define JOYSTICK_CAL_COUNT      10
 
 /**********************************************************************************************************************
  * Private definitions and macros
@@ -38,11 +46,28 @@
 /**********************************************************************************************************************
  * Private typedef
  *********************************************************************************************************************/
+typedef struct
+{
+    adc_id_t x;
+    adc_id_t y;
+    gpio_t sw;
+    uint16_t x_zero;
+    uint16_t y_zero;
+} joystick_config_t;
 
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-
+joystick_config_t joystick_config[JOYSTICK_ID_LAST] =
+{
+    {
+        .x = ADC_ID_JS_X,
+        .y = ADC_ID_JS_Y,
+        .sw = GPIO_SW_JS,
+        .x_zero = (JOYSTICK_ADC_RES / 2),
+        .y_zero = (JOYSTICK_ADC_RES / 2),
+    },
+};
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
@@ -54,107 +79,100 @@
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-void vhn2sp30_init(vhn2sp30_t *drive)
+bool joystick_init(void)
 {
-    gpio_output(drive->in_a);
-    gpio_output_low(drive->in_a);
-    gpio_output(drive->in_b);
-    gpio_output_low(drive->in_b);
-    gpio_output(drive->en);
-    gpio_output_low(drive->en);
-    pwm_set(drive->pwm, 0);
+    uint8_t i = 0;
+
+    for(i = 0; i < JOYSTICK_ID_LAST; i++)
+    {
+        joystick_calibrate((joystick_id_t)i);
+    }
+
+    return true;
+}
+
+
+void joystick_calibrate(joystick_id_t id)
+{
+    uint8_t i = JOYSTICK_CAL_COUNT;
+    uint32_t x = 0;
+    uint32_t y = 0;
+
+    while(i--)
+    {
+        x += adc_get_value_raw(joystick_config[id].x);
+        y += adc_get_value_raw(joystick_config[id].y);
+        osDelay(1);
+    }
+    joystick_config[id].x_zero = x / JOYSTICK_CAL_COUNT;
+    joystick_config[id].y_zero = y / JOYSTICK_CAL_COUNT;
 
     return;
 }
 
-void vhn2sp30_brake_vcc(vhn2sp30_t *drive)
+int16_t joystick_get_x(joystick_id_t id)
 {
-    gpio_output_high(drive->in_a);
-    gpio_output_high(drive->in_b);
-    gpio_output_high(drive->en);
-    vhn2sp30_io_pwm(drive, 0);
+    uint32_t x = adc_get_value_raw(joystick_config[id].x);
+
+    if(x > joystick_config[id].x_zero)
+    {
+         return ((x - joystick_config[id].x_zero) * JOYSTICK_RESOLUTION) / (4096 - joystick_config[id].x_zero);
+    }
+
+    if(x < joystick_config[id].x_zero)
+    {
+        return -(((joystick_config[id].x_zero - x) * JOYSTICK_RESOLUTION) / joystick_config[id].x_zero);
+    }
+
+    return 0;
+}
+
+int16_t joystick_get_y(joystick_id_t id)
+{
+    uint32_t y = adc_get_value_raw(joystick_config[id].y);
+
+    if(y > joystick_config[id].y_zero)
+    {
+         return ((y - joystick_config[id].y_zero) * JOYSTICK_RESOLUTION) / (JOYSTICK_ADC_RES - joystick_config[id].y_zero);
+    }
+
+    if(y < joystick_config[id].y_zero)
+    {
+        return -(((joystick_config[id].y_zero - y) * JOYSTICK_RESOLUTION) / joystick_config[id].y_zero);
+    }
+
+    return 0;
+}
+
+void joystick_get_vector(joystick_id_t id, int32_t *magnitude, int32_t *direction)
+{
+    double magn = 0;
+    double dir = 0;
+    int16_t x = joystick_get_x(id);
+    int16_t y = joystick_get_y(id);
+
+    magn = sqrt(pow(x, 2) + pow(y, 2));
+    if(magn > 1024)
+    {
+        magn = JOYSTICK_RESOLUTION;
+    }
+
+    dir = atan2(x, y);
+    if(dir < 0)
+    {
+        dir += 2 * JOYSTICK_PI;
+    }
+    dir = dir * 180 / JOYSTICK_PI;
+
+    *magnitude = (int32_t)magn;
+    *direction = (int32_t)dir;
 
     return;
 }
 
-void vhn2sp30_brake_gnd(vhn2sp30_t *drive)
+bool joystick_get_sw(joystick_id_t id)
 {
-    gpio_output_low(drive->in_a);
-    gpio_output_low(drive->in_b);
-    gpio_output_low(drive->en);
-    vhn2sp30_io_pwm(drive, 0);
-
-    return;
-}
-
-void vhn2sp30_run_cw(vhn2sp30_t *drive, uint8_t speed)
-{
-    vhn2sp30_io_enable(drive);
-    vhn2so30_io_cw(drive);
-    vhn2sp30_io_pwm(drive, speed);
-
-    return;
-}
-
-void vhn2sp30_run_ccw(vhn2sp30_t *drive, uint8_t speed)
-{
-    vhn2sp30_io_enable(drive);
-    vhn2so30_io_ccw(drive);
-    vhn2sp30_io_pwm(drive, speed);
-
-    return;
-}
-
-void vhn2sp30_neutral(vhn2sp30_t *drive)
-{
-    gpio_output_low(drive->in_a);
-    gpio_output_low(drive->in_b);
-    gpio_output_low(drive->en);
-    pwm_set(drive->pwm, 0);
-
-    return;
-}
-
-void vhn2so30_io_cw(vhn2sp30_t *drive)
-{
-    gpio_output_high(drive->in_a);
-    gpio_output_low(drive->in_b);
-
-    return;
-}
-
-void vhn2so30_io_ccw(vhn2sp30_t *drive)
-{
-    gpio_output_low(drive->in_a);
-    gpio_output_high(drive->in_b);
-
-    return;
-}
-
-void vhn2sp30_io_pwm(vhn2sp30_t *drive, uint8_t pwm)
-{
-    pwm_set_percentage(drive->pwm, pwm > 100 ? 100 : pwm);
-
-    return;
-}
-
-void vhn2sp30_io_enable(vhn2sp30_t *drive)
-{
-    gpio_output_high(drive->en);
-
-    return;
-}
-
-void vhn2sp30_io_disable(vhn2sp30_t *drive)
-{
-    gpio_output_low(drive->en);
-
-    return;
-}
-
-uint32_t vhn2sp30_io_cs(vhn2sp30_t *drive)
-{
-    return (uint32_t)((adc_get_value_volt(drive->cs) *VHN2SP30_CURRENT_SENSE_COEF) / VHN2SP30_CURRENT_SENSE_RESISTOR);
+    return gpio_input_get(joystick_config[id].sw);
 }
 
 /**********************************************************************************************************************

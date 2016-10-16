@@ -29,13 +29,20 @@
 #include "display/ssd1306.h"
 
 #include "sensors/sensors.h"
+#include "sensors/joystick.h"
+#include "motor/motor.h"
 
 #include "cmsis_os.h"
-#include "rtc.h"
+#include "bsp.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
+#define DISPLAY_LINE_X      3
+#define DISPLAY_LINE_Y_1    18
+#define DISPLAY_LINE_Y_2    29
+#define DISPLAY_LINE_Y_3    40
+#define DISPLAY_LINE_Y_4    51
 
 /**********************************************************************************************************************
  * Private definitions and macros
@@ -74,13 +81,20 @@ volatile display_menu_t display_menus[DISPLAY_MENU_ID_LAST] = {0};
  *********************************************************************************************************************/
 static void display_menu_init(display_menu_id_t id, uint32_t period, display_cb_t cb);
 
+static void display_menu_header(display_menu_id_t id, uint8_t *str);
+
 static void display_meniu_cb_welcome(display_menu_id_t id);
 static void display_meniu_cb_clock(display_menu_id_t id);
+#if DISPLAY_EXTRA
 static void display_meniu_cb_light(display_menu_id_t id);
 static void display_meniu_cb_temperature(display_menu_id_t id);
 static void display_meniu_cb_humidity(display_menu_id_t id);
+#endif // DISPLAY_EXTRA
+static void display_meniu_cb_joystick(display_menu_id_t id);
+static void display_meniu_cb_motor(display_menu_id_t id);
+static void display_meniu_cb_info(display_menu_id_t id);
 
-static void display_delay(uint32_t delay_ms);
+static void display_delay(display_menu_id_t id);
 static void display_contrast_control(void);
 
 /**********************************************************************************************************************
@@ -94,10 +108,15 @@ bool display_init(void)
     }
     
     display_menu_init(DISPLAY_MENU_ID_WELCOME, 0, display_meniu_cb_welcome);
-    display_menu_init(DISPLAY_MENU_ID_CLOCK, 100, display_meniu_cb_clock);
+    display_menu_init(DISPLAY_MENU_ID_CLOCK, 1000, display_meniu_cb_clock);
+#if DISPLAY_EXTRA
     display_menu_init(DISPLAY_MENU_ID_LIGHT, 100, display_meniu_cb_light);
     display_menu_init(DISPLAY_MENU_ID_TEMPERATURE, 100, display_meniu_cb_temperature);
     display_menu_init(DISPLAY_MENU_ID_HUMIDITY, 100, display_meniu_cb_humidity);
+#endif // DISPLAY_EXTRA
+    display_menu_init(DISPLAY_MENU_ID_JOYSTICK, 50, display_meniu_cb_joystick);
+    display_menu_init(DISPLAY_MENU_ID_MOTOR, 50, display_meniu_cb_motor);
+    display_menu_init(DISPLAY_MENU_ID_INFO, 1000, display_meniu_cb_info);
 
     display_menu_set(DISPLAY_MENU_ID_WELCOME);
 
@@ -134,7 +153,7 @@ void display_thread(void const *arg)
             }
             if(display_menus[id].period)
             {
-                display_delay(display_menus[id].period);
+                display_delay(id);
             }
             else
             {
@@ -144,7 +163,7 @@ void display_thread(void const *arg)
         }
         else
         {
-            display_delay(100);
+            display_delay(id);
         }
     }
 }
@@ -173,12 +192,33 @@ static void display_menu_init(display_menu_id_t id, uint32_t period, display_cb_
     return;
 }
 
+static void display_menu_header(display_menu_id_t id, uint8_t *str)
+{
+    uint8_t tmp[24] = {0};
+
+    if(display_menus[id].init == false)
+    {
+        //ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+        snprintf((char *)tmp, 24, "< %-13.13s >", str);
+
+        ssd1306_draw_filled_rectangle(0, 0, SSD1306_WIDTH, 13, SSD1306_COLOR_WHITE);
+        ssd1306_goto_xy(4, 3);
+        ssd1306_puts((uint8_t *)tmp, &fonts_7x10, SSD1306_COLOR_BLACK);
+
+        ssd1306_update_screen();
+    }
+
+    return;
+}
+
 static void display_meniu_cb_welcome(display_menu_id_t id)
 {
-    ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
+    //ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
 
-    ssd1306_goto_xy(37, 23);
-    ssd1306_puts((uint8_t *)"Hi ;)", &fonts_11x18, SSD1306_COLOR_WHITE);
+    ssd1306_goto_xy(40, 20);
+    ssd1306_puts((uint8_t *)"DS-2", &fonts_11x18, SSD1306_COLOR_WHITE);
+    ssd1306_goto_xy(25, 40);
+    ssd1306_puts((uint8_t *)"Controller", &fonts_7x10, SSD1306_COLOR_WHITE);
 
     ssd1306_update_screen();
 
@@ -193,12 +233,7 @@ static void display_meniu_cb_clock(display_menu_id_t id)
 
     ConvertRtcTime(timestamp, &clock);
 
-    if(display_menus[id].init == false)
-    {
-        ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
-        ssd1306_goto_xy(46, 10);
-        ssd1306_puts((uint8_t *)"Clock", &fonts_7x10, SSD1306_COLOR_WHITE);
-    }
+    display_menu_header(id, "Clock");
 
     ssd1306_goto_xy(20, 23);
     snprintf((char *)tmp, sizeof(tmp), "%02d:%02d:%02d", clock.tm_hour, clock.tm_min, clock.tm_sec);
@@ -211,7 +246,7 @@ static void display_meniu_cb_clock(display_menu_id_t id)
 
     return;
 }
-
+#if DISPLAY_EXTRA
 static void display_meniu_cb_light(display_menu_id_t id)
 {
     uint8_t tmp[16] = {0};
@@ -277,13 +312,13 @@ static void display_meniu_cb_humidity(display_menu_id_t id)
     if(display_menus[id].init == false)
     {
         ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
-
         ssd1306_goto_xy(36, 10);
         ssd1306_puts((uint8_t *)"Humidity", &fonts_7x10, SSD1306_COLOR_WHITE);
         ssd1306_goto_xy(60, 44);
         ssd1306_puts((uint8_t *)"%", &fonts_7x10, SSD1306_COLOR_WHITE);
-
     }
+
+
     snprintf((char *)tmp, 18, "%d", value);
     offset_x = (128 - (strlen((char *)tmp)  * 11)) / 2;
     ssd1306_goto_xy(3, 23);
@@ -296,12 +331,94 @@ static void display_meniu_cb_humidity(display_menu_id_t id)
 
     return;
 }
+#endif // DISPLAY_EXTRA
 
-static void display_delay(uint32_t delay_ms)
+static void display_meniu_cb_joystick(display_menu_id_t id)
+{
+    uint8_t tmp[18] = {0};
+    int32_t magn = 0;
+    int32_t dir = 0;
+
+    display_menu_header(id, "Joystick");
+
+    snprintf((char *)tmp, 18, "X:  %d       ", joystick_get_x(JOYSTICK_ID_1));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_1);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "Y:  %d       ", joystick_get_y(JOYSTICK_ID_1));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_2);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    joystick_get_vector(JOYSTICK_ID_1, &magn, &dir);
+    snprintf((char *)tmp, 18, "V:  %d %d      ", magn, dir);
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_3);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "SW: %01d   ", joystick_get_sw(JOYSTICK_ID_1));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_4);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    ssd1306_update_screen();
+
+    return;
+}
+
+static void display_meniu_cb_motor(display_menu_id_t id)
+{
+    uint8_t tmp[18] = {0};
+
+    display_menu_header(id, "Motor");
+
+    snprintf((char *)tmp, 18, "L.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_LEFT), motor_get_speed_target(MOTOR_ID_LEFT));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_1);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "L.C: %d mA.    ", motor_get_current(MOTOR_ID_LEFT));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_2);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "R.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_RIGHT), motor_get_speed_target(MOTOR_ID_RIGHT));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_3);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "R.C: %d mA.    ", motor_get_current(MOTOR_ID_RIGHT));
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_4);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    ssd1306_update_screen();
+
+    return;
+}
+
+static void display_meniu_cb_info(display_menu_id_t id)
+{
+    uint8_t tmp[18] = {0};
+
+    display_menu_header(id, "Info");
+
+    snprintf((char *)tmp, 18, "Ver: 1.1-a1");
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_1);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "Clk: %ld MHz.", SystemCoreClock / 1000000);
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_2);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, 18, "Tmp: %.02f degC.", adc_get_temperature());
+    ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_3);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    ssd1306_update_screen();
+
+    return;
+}
+
+static void display_delay(display_menu_id_t id)
 {
     static uint32_t c = 0;
+    uint32_t delay = display_menus[id].period;
 
-    while(delay_ms--)
+    while(delay--)
     {
         osDelay(1);
         c++;
@@ -309,6 +426,10 @@ static void display_delay(uint32_t delay_ms)
         {
             c = 0;
             display_contrast_control();
+        }
+        if(id != display_menu_id)
+        {
+            break;
         }
     }
 

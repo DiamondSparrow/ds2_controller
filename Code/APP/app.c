@@ -38,6 +38,7 @@
 #include "motor/motor.h"
 #include "sensors/am2301.h"
 #include "sensors/sensors.h"
+#include "sensors/joystick.h"
 #include "servo/servo.h"
 #include "ultrasonic/ultrasonic.h"
 
@@ -92,7 +93,7 @@ int main(void)
     DEBUG_BOOT(" # DS-2 Controller #");
     DEBUG_BOOT(" * Booting.");
     DEBUG_BOOT("Build ....... %s %s", __DATE__, __TIME__);
-    DEBUG_BOOT("Core Clock .. %ld MHz.", SystemCoreClock);
+    DEBUG_BOOT("Core Clock .. %ld Hz.", SystemCoreClock);
     
     // Setup and initialize peripherals.
     DEBUG_BOOT("BSP ......... ok.");
@@ -119,7 +120,7 @@ int main(void)
     {
         // app_error application error function.
         app_error();
-    }
+    } 
 
     return 0;
 }
@@ -128,7 +129,10 @@ void app_thread(void const *arg)
 {
     display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
     uint8_t ret = 0;
-    bool sw1 = false;
+    uint8_t c = 0;
+    uint8_t d = 0;
+    bool sw_left = false;
+    bool sw_right = false;
 
     debug_init();
     DEBUG_INIT(" * Initializing.");
@@ -141,8 +145,10 @@ void app_thread(void const *arg)
     DEBUG_INIT("Servo ....... ok.");
     ultrasonic_init();
     DEBUG_INIT("Ultrasonic .. ok.");
-    ret = sensors_init();
-    DEBUG_INIT("Sensors ..... %s.", ret == false ? "err" : "ok");
+    ret = joystick_init();
+    DEBUG_INIT("Joystick .... %s.", ret == false ? "err" : "ok");
+    //ret = sensors_init();
+    //DEBUG_INIT("Sensors ..... %s.", ret == false ? "err" : "ok");
     ret = motor_init();
     DEBUG_INIT("Motor ....... %s.", ret == false ? "err" : "ok");
     ret = display_init();
@@ -161,9 +167,47 @@ void app_thread(void const *arg)
 
     while(1)
     {
-        if(gpio_input_get(GPIO_SW_1) == false)
+        d = 20;
+        c = 0;
+        while(d--)
         {
-            if(sw1 == false)
+            if(gpio_input_get(GPIO_SW_LEFT) == false)
+            {
+                c++;
+            }
+            osDelay(1);
+        }
+        if(c >= 10)
+        {
+            if(sw_left == false)
+            {
+                menu_id--;
+                if(menu_id == 0)
+                {
+                    menu_id = (display_menu_id_t)(DISPLAY_MENU_ID_LAST - 1);
+                }
+                display_menu_set(menu_id);
+            }
+            sw_left = true;
+        }
+        else
+        {
+            sw_left = false;
+        }
+        osDelay(10);
+        d = 20;
+        c = 0;
+        while(d--)
+        {
+            if(gpio_input_get(GPIO_SW_RIGHT) == false)
+            {
+                c++;
+            }
+            osDelay(1);
+        }
+        if(c >= 10)
+        {
+            if(sw_right == false)
             {
                 menu_id++;
                 if(menu_id == DISPLAY_MENU_ID_LAST)
@@ -172,16 +216,13 @@ void app_thread(void const *arg)
                 }
                 display_menu_set(menu_id);
             }
-            sw1 = true;
+            sw_right = true;
         }
         else
         {
-            sw1 = false;
+            sw_right = false;
         }
-        osDelay(100);
-        DEBUG("ADC: %d, %d, %d;", adc_get_value_volt(ADC_ID_TEMPERATURE), adc_get_value_volt(ADC_ID_MOTOR_LEFT_CURR), adc_get_value_volt(ADC_ID_MOTOR_RIGHT_CURR));
-        DEBUG("TEMP: %.02f;", adc_get_temperature());
-        osDelay(400);
+        osDelay(10);
     }
 }
 

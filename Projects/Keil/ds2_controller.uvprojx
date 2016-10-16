@@ -495,6 +495,11 @@
               <FilePath>..\..\Code\APP\sensors\filters.c</FilePath>
             </File>
             <File>
+              <FileName>joystick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\sensors\joystick.c</FilePath>
+            </File>
+            <File>
               <FileName>sensors.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\APP\sensors\sensors.c</FilePath>

@@ -44,6 +44,7 @@
  *********************************************************************************************************************/
 typedef struct
 {
+    LPC_ADC_T *adc;
     uint8_t ch;
     uint8_t port;
     uint8_t pin;
@@ -62,9 +63,11 @@ typedef struct
  *********************************************************************************************************************/
 adc_data_t adc_data[ADC_ID_LAST] =
 {
-    {.ch = 0,   .port = 0xFF,   .pin = 0xFF,    .sw_pin = SWM_FIXED_ADC0_0, .value = 0, {0, 0, 0}},
-    {.ch = 2,   .port = 0,      .pin = 6,       .sw_pin = SWM_FIXED_ADC0_2, .value = 0, {0, 0, 0}},
-    {.ch = 3,   .port = 0,      .pin = 5,       .sw_pin = SWM_FIXED_ADC0_3, .value = 0, {0, 0, 0}},
+    {.adc = LPC_ADC0, .ch = 0,   .port = 0xFF,   .pin = 0xFF,    .sw_pin = SWM_FIXED_ADC0_0, .value = 0, {0, 0, 0}},
+    {.adc = LPC_ADC0, .ch = 2,   .port = 0,      .pin = 6,       .sw_pin = SWM_FIXED_ADC0_2, .value = 0, {0, 0, 0}},
+    {.adc = LPC_ADC0, .ch = 3,   .port = 0,      .pin = 5,       .sw_pin = SWM_FIXED_ADC0_3, .value = 0, {0, 0, 0}},
+    {.adc = LPC_ADC1, .ch = 1,   .port = 0,      .pin = 9,       .sw_pin = SWM_FIXED_ADC1_1 , .value = 0, {0, 0, 0}},
+    {.adc = LPC_ADC1, .ch = 4,   .port = 1,      .pin = 2,       .sw_pin = SWM_FIXED_ADC1_4, .value = 0, {0, 0, 0}},
 };
 
 /**********************************************************************************************************************
@@ -84,7 +87,48 @@ void adc_init(void)
 {
     adc_0_init();
     adc_1_init();
+
     return;
+}
+
+uint32_t adc_get_value_raw(adc_id_t id)
+{
+#if ADC_AVG_COUNT > 1
+    return (adc_data[id].avg.value);
+#else
+    uint32_t value = adc_data[ch].value;
+
+    if(!(value & ADC_DR_OVERRUN) && (value & ADC_SEQ_GDAT_DATAVALID))
+    {
+        return ADC_DR_RESULT(value);
+    }
+
+    return UINT32_MAX;
+#endif
+}
+
+uint32_t adc_get_value_volt(adc_id_t id)
+{
+    uint32_t value = adc_get_value_raw(id);
+
+    if(value != UINT32_MAX)
+    {
+        return (value * ADC_REFERENCE) / ADC_RESOLUTION;
+    }
+
+    return UINT32_MAX;
+}
+
+float adc_get_temperature(void)
+{
+    uint32_t value = adc_get_value_volt(ADC_ID_TEMPERATURE);
+
+    if(value != UINT32_MAX)
+    {
+        return (float)(((float)value  - (float)ADC_TEMP_SENSOR_LLS_0 ) / (float)ADC_TEMP_SENSOR_LLS_SLOPE);
+    }
+
+    return 0;
 }
 
 /**********************************************************************************************************************
@@ -118,10 +162,14 @@ static void adc_0_init(void)
 
     for(i = 0; i < ADC_ID_LAST; i++)
     {
+        if(adc_data[i].adc != LPC_ADC0)
+        {
+            continue;
+        }
         if(adc_data[i].port != 0xFF && adc_data[i].pin != 0xFF)
         {
             /* Disables pullups/pulldowns and disable digital mode */
-            Chip_IOCON_PinMuxSet(LPC_IOCON, adc_data[i].port, adc_data[i].pin, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+            Chip_IOCON_PinMuxSet(LPC_IOCON, adc_data[i].port, adc_data[i].pin, (IOCON_MODE_INACT | IOCON_ADMODE_EN));
             /* Assign ADC1_0 to PIO1_1 via SWM (fixed pin) */
             Chip_SWM_EnableFixedPin(adc_data[i].sw_pin);
         }
@@ -146,49 +194,8 @@ static void adc_0_init(void)
     return;
 }
 
-uint32_t adc_get_value_raw(adc_id_t id)
-{
-#if ADC_AVG_COUNT > 1
-    return (adc_data[id].avg.value);
-
-#else
-    uint32_t value = adc_data[ch].value;
-
-    if(!(value & ADC_DR_OVERRUN) && (value & ADC_SEQ_GDAT_DATAVALID))
-    {
-        return ADC_DR_RESULT(value);
-    }
-
-    return UINT32_MAX;
-#endif
-}
-
-uint32_t adc_get_value_volt(adc_id_t id)
-{
-    uint32_t value = adc_get_value_raw(id);
-
-    if(value != UINT32_MAX)
-    {
-        return (ADC_DR_RESULT(value) * ADC_REFERENCE) / ADC_RESOLUTION;
-    }
-
-    return UINT32_MAX;
-}
-
-float adc_get_temperature(void)
-{
-    uint32_t value = adc_get_value_volt(ADC_ID_TEMPERATURE);
-
-    if(value != UINT32_MAX)
-    {
-        return (float)(((float)value  - (float)ADC_TEMP_SENSOR_LLS_0 ) / (float)ADC_TEMP_SENSOR_LLS_SLOPE);
-    }
-
-    return 0;
-}
-
 /**
- * @brief   Handle interrupt from ADC1 sequencer A
+ * @brief   Handle interrupt from ADC0 sequencer A
  */
 void ADC0A_IRQHandler(void)
 {
@@ -203,11 +210,15 @@ void ADC0A_IRQHandler(void)
     {
         for(i = 0; i < ADC_ID_LAST; i++)
         {
+            if(adc_data[i].adc != LPC_ADC0)
+            {
+                continue;
+            }
             adc_data[i].value = Chip_ADC_GetDataReg(LPC_ADC0, adc_data[i].ch);
 #if ADC_AVG_COUNT > 1
             if(adc_data[i].value & ADC_SEQ_GDAT_DATAVALID)
             {
-                adc_data[i].avg.accumulator += adc_data[i].value;
+                adc_data[i].avg.accumulator += ADC_DR_RESULT(adc_data[i].value);
                 adc_data[i].avg.counter++;
                 if(adc_data[i].avg.counter >= ADC_AVG_COUNT)
                 {
@@ -228,6 +239,103 @@ void ADC0A_IRQHandler(void)
 
 static void adc_1_init(void)
 {
+    uint8_t i = 0;
+
+    /* Setup ADC for 12-bit mode and normal power */
+    Chip_ADC_Init(LPC_ADC1, 0);
+
+    /* Setup for maximum ADC clock rate */
+    Chip_ADC_SetClockRate(LPC_ADC1, ADC_MAX_SAMPLE_RATE);
+
+    /*
+     * For ADC0, seqeucner A will be used without threshold events.
+     * It will be triggered manually by the sysTick interrupt and
+     * only monitor the internal temperature sensor.
+     */
+    Chip_ADC_SetupSequencer(LPC_ADC1, ADC_SEQA_IDX, (ADC_SEQ_CTRL_CHANSEL(1) | ADC_SEQ_CTRL_CHANSEL(4) | ADC_SEQ_CTRL_BURST | ADC_SEQ_CTRL_MODE_EOS));
+
+    /* Use higher voltage trim for both ADCs */
+    //Chip_ADC_SetTrim(LPC_ADC1, ADC_TRIM_VRANGE_HIGHV);
+
+    for(i = 0; i < ADC_ID_LAST; i++)
+    {
+        if(adc_data[i].adc != LPC_ADC1)
+        {
+            continue;
+        }
+        if(adc_data[i].port != 0xFF && adc_data[i].pin != 0xFF)
+        {
+            /* Disables pullups/pulldowns and disable digital mode */
+            Chip_IOCON_PinMuxSet(LPC_IOCON, adc_data[i].port, adc_data[i].pin, (IOCON_MODE_INACT | IOCON_ADMODE_EN));
+            /* Assign ADC1_0 to PIO1_1 via SWM (fixed pin) */
+            Chip_SWM_EnableFixedPin(adc_data[i].sw_pin);
+        }
+    }
+
+    /* Need to do a calibration after initialization and trim */
+    Chip_ADC_StartCalibration(LPC_ADC1);
+    while (!(Chip_ADC_IsCalibrationDone(LPC_ADC1))) {}
+
+    /* Clear all pending interrupts */
+    Chip_ADC_ClearFlags(LPC_ADC1, Chip_ADC_GetFlags(LPC_ADC1));
+
+    /* Enable sequence A completion interrupts for ADC0 */
+    Chip_ADC_EnableInt(LPC_ADC1, ADC_INTEN_SEQA_ENABLE);
+
+    /* Enable related ADC NVIC interrupts */
+    NVIC_EnableIRQ(ADC1_SEQA_IRQn);
+
+    /* Enable sequencers */
+    Chip_ADC_EnableSequencer(LPC_ADC1, ADC_SEQA_IDX);
+
+    return;
+}
+
+
+/**
+ * @brief   Handle interrupt from ADC1 sequencer A
+ */
+void ADC1A_IRQHandler(void)
+{
+    uint8_t i = 0;
+    uint32_t pending;
+
+    /* Get pending interrupts */
+    pending = Chip_ADC_GetFlags(LPC_ADC1);
+
+    /* Sequence A completion interrupt */
+    if (pending & ADC_FLAGS_SEQA_INT_MASK)
+    {
+        for(i = 0; i < ADC_ID_LAST; i++)
+        {
+            if(adc_data[i].adc != LPC_ADC1)
+            {
+                continue;
+            }
+            adc_data[i].value = Chip_ADC_GetDataReg(LPC_ADC1, adc_data[i].ch);
+#if ADC_AVG_COUNT > 1
+            if(adc_data[i].value & ADC_SEQ_GDAT_DATAVALID)
+            {
+                adc_data[i].avg.accumulator += ADC_DR_RESULT(adc_data[i].value);
+                adc_data[i].avg.counter++;
+                if(adc_data[i].avg.counter >= ADC_AVG_COUNT)
+                {
+                    adc_data[i].avg.value = adc_data[i].avg.accumulator / ADC_AVG_COUNT;
+                    adc_data[i].avg.accumulator = 0;
+                    adc_data[i].avg.counter = 0;
+                }
+            }
+            else
+            {
+                adc_data[i].avg.accumulator = 0;
+                adc_data[i].avg.counter = 0;
+            }
+#endif
+        }
+    }
+
+    /* Clear Sequence A completion interrupt */
+    Chip_ADC_ClearFlags(LPC_ADC1, ADC_FLAGS_SEQA_INT_MASK);
 
     return;
 }

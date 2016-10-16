@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        vhn2sp30.h
+ * @file        joystick.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-09-12
- * @brief       H-bridge Motor drive VHN2SP30 C header file.
+ * @date        2016-10-16
+ * @brief       Joystick C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef VHN2SP30_H_
-#define VHN2SP30_H_
+#ifndef JOYSTICK_H_
+#define JOYSTICK_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,17 +27,10 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
-#include <stdint.h>
-
-#include "adc.h"
-#include "gpio.h"
-#include "pwm.h"
 
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define VHN2SP30_CURRENT_SENSE_RESISTOR 1500    //!< Current sense resistance in Ohms.
-#define VHN2SP30_CURRENT_SENSE_COEF     11370   //!< Current sense coefficient K1 or K2 by manual, typical value.
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -46,14 +39,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
-typedef struct
+typedef enum
 {
-    gpio_t in_a;
-    gpio_t in_b;
-    gpio_t en;
-    pwm_id_t pwm;
-    adc_id_t cs;
-} vhn2sp30_t;
+    JOYSTICK_ID_1,
+    JOYSTICK_ID_LAST,
+} joystick_id_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -62,23 +52,16 @@ typedef struct
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void vhn2sp30_init(vhn2sp30_t *drive);
+bool joystick_init(void);
+void joystick_calibrate(joystick_id_t id);
+int16_t joystick_get_x(joystick_id_t id);
+int16_t joystick_get_y(joystick_id_t id);
+void joystick_get_vector(joystick_id_t id, int32_t *magnitude, int32_t *direction);
+bool joystick_get_sw(joystick_id_t id);
 
-void vhn2sp30_brake_vcc(vhn2sp30_t *drive);
-void vhn2sp30_brake_gnd(vhn2sp30_t *drive);
-void vhn2sp30_run_cw(vhn2sp30_t *drive, uint8_t speed);
-void vhn2sp30_run_ccw(vhn2sp30_t *drive, uint8_t speed);
-void vhn2sp30_neutral(vhn2sp30_t *drive);
-
-void vhn2so30_io_cw(vhn2sp30_t *drive);
-void vhn2so30_io_ccw(vhn2sp30_t *drive);
-void vhn2sp30_io_pwm(vhn2sp30_t *drive, uint8_t pwm);
-void vhn2sp30_io_enable(vhn2sp30_t *drive);
-void vhn2sp30_io_disable(vhn2sp30_t *drive);
-uint32_t vhn2sp30_io_cs(vhn2sp30_t *drive);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* VHN2SP30_H_ */
+#endif /* JOYSTICK_H_ */
