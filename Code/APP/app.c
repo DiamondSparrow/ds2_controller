@@ -138,6 +138,7 @@ void app_thread(void const *arg)
     DEBUG_INIT(" * Initializing.");
     indication_set_blocking(INDICATION_INIT);
     indication_init();
+
     DEBUG_INIT("Indication .. ok.");
     cli_app_init();
     DEBUG_INIT("CLI APP ..... ok.");
@@ -157,6 +158,8 @@ void app_thread(void const *arg)
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
+    
+    rtc_get_from_build();
 
     osDelay(1000);
 

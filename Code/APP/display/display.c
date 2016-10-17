@@ -199,11 +199,14 @@ static void display_menu_header(display_menu_id_t id, uint8_t *str)
     if(display_menus[id].init == false)
     {
         //ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH - 1, SSD1306_HEIGHT - 1, SSD1306_COLOR_WHITE);
-        snprintf((char *)tmp, 24, "< %-13.13s >", str);
+        //ssd1306_draw_rectangle(0, 0, SSD1306_WIDTH, 13, SSD1306_COLOR_WHITE);
+        //ssd1306_draw_filled_rectangle(0, 0, SSD1306_WIDTH, 13, SSD1306_COLOR_WHITE);
 
-        ssd1306_draw_filled_rectangle(0, 0, SSD1306_WIDTH, 13, SSD1306_COLOR_WHITE);
-        ssd1306_goto_xy(4, 3);
-        ssd1306_puts((uint8_t *)tmp, &fonts_7x10, SSD1306_COLOR_BLACK);
+        ssd1306_draw_line(0, 13, SSD1306_WIDTH, 13, SSD1306_COLOR_WHITE);
+
+        snprintf((char *)tmp, 24, "< %-13.13s >", str);
+        ssd1306_goto_xy(4, 1);
+        ssd1306_puts((uint8_t *)tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
         ssd1306_update_screen();
     }
@@ -246,6 +249,7 @@ static void display_meniu_cb_clock(display_menu_id_t id)
 
     return;
 }
+
 #if DISPLAY_EXTRA
 static void display_meniu_cb_light(display_menu_id_t id)
 {
@@ -445,8 +449,8 @@ static void display_contrast_control(void)
         ligh_level = (sensors_data.light.value_lp * 256 / 512);
         ligh_level = ligh_level > 255 ? 255 : ligh_level;
         //ligh_level = sensors_data.light.value_lp > 255 ? 255 : sensors_data.light.value_lp;
+        ssd1306_set_contrast(ligh_level);
     }
-    ssd1306_set_contrast(ligh_level);
 
     return;
 }

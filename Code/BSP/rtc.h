@@ -51,6 +51,7 @@ extern "C" {
 void rtc_init(void);
 void rtc_set(uint32_t timestamp);
 uint32_t rtc_get(void);
+uint32_t rtc_get_from_build(void);
 
 #ifdef __cplusplus
 }

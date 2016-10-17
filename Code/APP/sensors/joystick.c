@@ -38,6 +38,9 @@
 #define JOYSTICK_ADC_RES        4096
 #define JOYSTICK_PI             3.14159265358979f
 #define JOYSTICK_CAL_COUNT      10
+#define JOYSTICK_X_INVERT       1
+#define JOYSTICK_Y_INVERT       0
+
 
 /**********************************************************************************************************************
  * Private definitions and macros
@@ -91,7 +94,6 @@ bool joystick_init(void)
     return true;
 }
 
-
 void joystick_calibrate(joystick_id_t id)
 {
     uint8_t i = JOYSTICK_CAL_COUNT;
@@ -116,12 +118,20 @@ int16_t joystick_get_x(joystick_id_t id)
 
     if(x > joystick_config[id].x_zero)
     {
-         return ((x - joystick_config[id].x_zero) * JOYSTICK_RESOLUTION) / (4096 - joystick_config[id].x_zero);
+#if JOYSTICK_X_INVERT
+        return -(((x - joystick_config[id].x_zero) * JOYSTICK_RESOLUTION) / (JOYSTICK_ADC_RES - joystick_config[id].x_zero));
+#else
+        return (((x - joystick_config[id].x_zero) * JOYSTICK_RESOLUTION) / (JOYSTICK_ADC_RES - joystick_config[id].x_zero));
+#endif
     }
 
     if(x < joystick_config[id].x_zero)
     {
+#if JOYSTICK_X_INVERT
+        return (((joystick_config[id].x_zero - x) * JOYSTICK_RESOLUTION) / joystick_config[id].x_zero);
+#else
         return -(((joystick_config[id].x_zero - x) * JOYSTICK_RESOLUTION) / joystick_config[id].x_zero);
+#endif
     }
 
     return 0;
@@ -133,12 +143,20 @@ int16_t joystick_get_y(joystick_id_t id)
 
     if(y > joystick_config[id].y_zero)
     {
-         return ((y - joystick_config[id].y_zero) * JOYSTICK_RESOLUTION) / (JOYSTICK_ADC_RES - joystick_config[id].y_zero);
+#if JOYSTICK_Y_INVERT
+        return -(((y - joystick_config[id].y_zero) * JOYSTICK_RESOLUTION) / (JOYSTICK_ADC_RES - joystick_config[id].y_zero));
+#else
+        return (((y - joystick_config[id].y_zero) * JOYSTICK_RESOLUTION) / (JOYSTICK_ADC_RES - joystick_config[id].y_zero));
+#endif
     }
 
     if(y < joystick_config[id].y_zero)
     {
+#if JOYSTICK_Y_INVERT
+        return (((joystick_config[id].y_zero - y) * JOYSTICK_RESOLUTION) / joystick_config[id].y_zero);
+#else
         return -(((joystick_config[id].y_zero - y) * JOYSTICK_RESOLUTION) / joystick_config[id].y_zero);
+#endif
     }
 
     return 0;

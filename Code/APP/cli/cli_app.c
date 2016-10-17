@@ -93,7 +93,7 @@ void cli_app_thread(void const *arg)
     {
         osDelay(10);
         memset(cli_app_rx_data, 0, CLI_APP_TX_SIZE);
-        if((rx_count = cli_receive_line(cli_app_rx_data, CLI_APP_RX_SIZE)) == 0)
+        if((rx_count = cli_receive_line(cli_app_rx_data, CLI_APP_RX_SIZE)) < 3)
         {
             continue;
         }
