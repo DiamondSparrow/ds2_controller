@@ -26,17 +26,23 @@
 #include "motor/motor.h"
 #include "motor/vhn2sp30.h"
 #include "sensors/filters.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include "debug.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
+/** Sensors thread attributes. */
+const osThreadAttr_t motor_thread_attr =
+{
+    .name = "MOTOR",
+    .stack_size = 256,
+    .priority = osPriorityNormal,
+};
 
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-osThreadDef(motor_thread, osPriorityNormal, 1, 256);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -56,7 +62,7 @@ typedef struct
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-osThreadId motor_thread_id;
+osThreadId_t motor_thread_id;
 
 /**********************************************************************************************************************
  * Exported variables
@@ -118,7 +124,7 @@ bool motor_init()
         vhn2sp30_init(&motor_data[MOTOR_ID_RIGHT].drive);
     }
     
-    if((motor_thread_id = osThreadCreate(osThread(motor_thread), NULL)) == NULL)
+    if((motor_thread_id = osThreadNew(motor_thread, NULL, &motor_thread_attr)) == NULL)
     {
         return false;
     }
@@ -126,7 +132,7 @@ bool motor_init()
     return true;
 }
 
-void motor_thread(void const *arg)
+void motor_thread(void *arguments)
 {
     uint8_t i = 0;
 

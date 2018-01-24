@@ -25,7 +25,7 @@
 #include <string.h>
 
 #include "chip.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 #include "app.h"
 #include "debug.h"
@@ -39,18 +39,23 @@
 #include "sensors/am2301.h"
 #include "sensors/sensors.h"
 #include "sensors/joystick.h"
+#include "sensors/ultrasonic.h"
 #include "servo/servo.h"
-#include "ultrasonic/ultrasonic.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
+/** Application thread attributes. */
+const osThreadAttr_t app_thread_attr =
+{
+    .name = "APP",
+    .stack_size = 512,
+    .priority = osPriorityNormal,
+};
 
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-/** Define application thread */
-osThreadDef(app_thread, osPriorityNormal, 1, 512);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -60,7 +65,7 @@ osThreadDef(app_thread, osPriorityNormal, 1, 512);
  * Private variables
  *********************************************************************************************************************/
 /** Application thread ID. */
-osThreadId app_thread_id;
+osThreadId_t app_thread_id;
 
 /**********************************************************************************************************************
  * Exported variables
@@ -69,7 +74,12 @@ osThreadId app_thread_id;
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
-//static void app_delay_us(volatile uint32_t us);
+/**
+ * @brief   Application main thread.
+ *
+ * @param   arguments   Pointer to thread arguments.
+ */
+static void app_thread(void *arguments);
 
 /**********************************************************************************************************************
  * Exported functions
@@ -92,40 +102,63 @@ int main(void)
     DEBUG_BOOT("          /_\\       ");
     DEBUG_BOOT(" # DS-2 Controller #");
     DEBUG_BOOT(" * Booting.");
-    DEBUG_BOOT("Build ....... %s %s", __DATE__, __TIME__);
-    DEBUG_BOOT("Core Clock .. %ld Hz.", SystemCoreClock);
+    DEBUG_BOOT("%-15.15s %s %s", "Build:", __DATE__, __TIME__);
+    DEBUG_BOOT("%-15.15s %ld Hz.", "Core Clock:", SystemCoreClock);
     
     // Setup and initialize peripherals.
-    DEBUG_BOOT("BSP ......... ok.");
+    DEBUG_BOOT("%-15.15s ok.", "BSP:");
 
-    // initialize RTOS kernel.
+    // Initialize and start Event Recorder
+    // EventRecorderInitialize(EventRecordError, 1U);
+
+    // Initialize RTOS kernel.
     if(osKernelInitialize() != osOK)
     {
-        // Invoke application error function.
+        DEBUG_BOOT("%-15.15s err.", "RTOS Kernel:");
+        // Invoke error function.
         app_error();
     }
-    DEBUG_BOOT("Kernel ...... ok.");
+    DEBUG_BOOT("%-15.15s ok.", "RTOS Kernel:");
 
-    // Create application thread.
-    if((app_thread_id = osThreadCreate(osThread(app_thread), NULL)) == NULL)
+    // Initialize application thread.
+    if((app_thread_id = osThreadNew(&app_thread, NULL, &app_thread_attr)) == NULL)
     {
-        // Failed to create a thread
+        DEBUG_BOOT("%-15.15s err.", "APP:");
+        // Invoke error function.
         app_error();
     }
-    DEBUG_BOOT("APP ......... ok.");
+    DEBUG_BOOT("%-15.15s ok.", "APP:");
 
-
-    // Start kernel.
-    if(osKernelStart() != osOK)
+    // Start kernel, if not ready.
+    if(osKernelGetState() == osKernelReady)
     {
-        // app_error application error function.
-        app_error();
-    } 
+        if(osKernelStart() != osOK)
+        {
+            DEBUG_BOOT("%-15.15s err.", "OS Start:");
+            // Invoke error function.
+            app_error();
+        }
+    }
 
     return 0;
 }
 
-void app_thread(void const *arg)
+void app_error(void)
+{
+    indication_set_blocking(INDICATION_RED);
+    debug_send_blocking((uint8_t *)"ERROR!\r", 7);
+
+    while(1)
+    {
+        __nop();
+    }
+}
+
+/**********************************************************************************************************************
+ * Private functions
+ *********************************************************************************************************************/
+
+static void app_thread(void *arguments)
 {
     display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
     uint8_t ret = 0;
@@ -139,21 +172,21 @@ void app_thread(void const *arg)
     indication_set_blocking(INDICATION_INIT);
     indication_init();
 
-    DEBUG_INIT("Indication .. ok.");
+    DEBUG_INIT("%-15.15s ok.", "Indication:");
     cli_app_init();
-    DEBUG_INIT("CLI APP ..... ok.");
+    DEBUG_INIT("%-15.15s ok.", "CLI APP:");
     servo_init();
-    DEBUG_INIT("Servo ....... ok.");
+    DEBUG_INIT("%-15.15s ok.", "Servo:");
     ultrasonic_init();
-    DEBUG_INIT("Ultrasonic .. ok.");
+    DEBUG_INIT("%-15.15s ok.", "Ultrasonic:");
     ret = joystick_init();
-    DEBUG_INIT("Joystick .... %s.", ret == false ? "err" : "ok");
+    DEBUG_INIT("%-15.15s %s.", "Joystick:", ret == false ? "err" : "ok");
     //ret = sensors_init();
-    //DEBUG_INIT("Sensors ..... %s.", ret == false ? "err" : "ok");
+    //DEBUG_INIT("%-15.15s %s.", "Sensors:", ret == false ? "err" : "ok");
     ret = motor_init();
-    DEBUG_INIT("Motor ....... %s.", ret == false ? "err" : "ok");
+    DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
     ret = display_init();
-    DEBUG_INIT("Display ..... %s.", ret == false ? "err" : "ok");
+    DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
@@ -228,36 +261,6 @@ void app_thread(void const *arg)
         osDelay(10);
     }
 }
-
-void app_error(void)
-{
-    indication_set_blocking(INDICATION_RED);
-    debug_send_blocking((uint8_t *)"ERROR!\r", 7);
-
-    while(1)
-    {
-        __nop();
-    }
-}
-
-/**********************************************************************************************************************
- * Private functions
- *********************************************************************************************************************/
-/*
-static void app_delay_us(volatile uint32_t us)
-{
-    // Go to clock cycles
-    us *= (SystemCoreClock / 1000000) / 8;
-
-    // Wait till done
-    while(us--)
-    {
-        __nop();
-    }
-
-    return;
-}
-*/
 
 void HardFault_Handler(void)
 {

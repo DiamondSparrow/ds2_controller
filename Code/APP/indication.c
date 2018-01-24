@@ -25,18 +25,21 @@
 
 #include "chip.h"
 #include "bsp.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 #include "indication.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-
+/** Indication timer attributes. */
+const osTimerAttr_t indication_timer_attr =
+{
+    .name = "INDICATION",
+};
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-osTimerDef(indication, indication_handle);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -45,7 +48,7 @@ osTimerDef(indication, indication_handle);
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-osTimerId indication_timer_id;
+osTimerId_t indication_timer_id;
 indication_t indication_flag = INDICATION_NA;
 
 /**********************************************************************************************************************
@@ -135,7 +138,7 @@ static void indication_cntrl_fault(void);
  *********************************************************************************************************************/
 bool indication_init(void)
 {
-    if((indication_timer_id = osTimerCreate(osTimer(indication), osTimerPeriodic, NULL)) == NULL)
+    if((indication_timer_id = osTimerNew(&indication_handle, osTimerPeriodic, NULL, &indication_timer_attr)) == NULL)
     {
         return false;
     }
@@ -167,7 +170,7 @@ void indication_set_blocking(indication_t indication)
     return;
 }
 
-void indication_handle(void const *arg)
+void indication_handle(void *arguments)
 {
     indication_t indication = indication_flag;
 

@@ -92,9 +92,9 @@ void indication_set_blocking(indication_t indication);
 /**
  * @brief   Indication timer handler.
  *
- * @param   arg Pointer to timer arguments.
+ * @param   arguments   Pointer to timer arguments.
  */
-void indication_handle(void const *arg);
+void indication_handle(void *arguments);
 
 #ifdef __cplusplus
 }

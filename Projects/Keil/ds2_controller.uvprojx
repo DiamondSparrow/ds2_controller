@@ -7,22 +7,23 @@
 
   <Targets>
     <Target>
-      <TargetName>Target 1</TargetName>
+      <TargetName>Develop</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060300::V5.06 update 3 (build 300)::ARMCC</pCCUsed>
+      <pCCUsed>5060528::V5.06 update 5 (build 528)::ARMCC</pCCUsed>
+      <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>LPC1549JBD64</Device>
           <Vendor>NXP</Vendor>
           <PackID>Keil.LPC1500_DFP.1.2.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
-          <Cpu>IROM(0x00000000,0x40000) IRAM(0x02000000,0x9000) CPUTYPE("Cortex-M3") CLOCK(12000000) ELITTLE</Cpu>
+          <Cpu>IRAM(0x02000000,0x9000) IROM(0x00000000,0x40000) CPUTYPE("Cortex-M3") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
           <FlashDriverDll>UL2CM3(-S0 -C0 -P0 -FD02000000 -FC1000 -FN1 -FF0LPC15xx_256 -FS00 -FL040000 -FP0($$Device:LPC1549JBD64$Flash\LPC15xx_256.FLM))</FlashDriverDll>
           <DeviceId>0</DeviceId>
-          <RegisterFile>$$Device:LPC1549JBD64$Device\Include\LPC15xx.h</RegisterFile>
+          <RegisterFile>$$Device:LPC1549JBD64$LPCOpen\software\lpc_core\lpc_chip\chip_15xx\chip.h</RegisterFile>
           <MemoryEnv></MemoryEnv>
           <Cmp></Cmp>
           <Asm></Asm>
@@ -137,7 +138,7 @@
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3>"" ()</Flash3>
+          <Flash3></Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -310,7 +311,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>2</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -321,7 +322,7 @@
             <Rwpi>0</Rwpi>
             <wLevel>2</wLevel>
             <uThumb>0</uThumb>
-            <uSurpInc>0</uSurpInc>
+            <uSurpInc>1</uSurpInc>
             <uC99>1</uC99>
             <useXO>0</useXO>
             <v6Lang>0</v6Lang>
@@ -335,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>CORE_M3, __CC_ARM, NO_BOARD_LIB</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Code\APP;..\..\Code\APP\config;..\..\Code\Utils;..\..\Code\Startup;..\..\Code\ThirdParty\CMSIS\Include;..\..\Code\ThirdParty\lpc_core\lpc_chip\chip_15xx;..\..\Code\ThirdParty\lpc_core\lpc_chip\chip_15xx\config_15xx;..\..\Code\ThirdParty\lpc_core\lpc_chip\chip_common;..\..\Code\ThirdParty\RTX;..\..\Code\BSP</IncludePath>
+              <IncludePath>..\..\Code\APP;..\..\Code\APP\config;..\..\Code\BSP;..\..\Code\Utils;..\..\Code\ThirdParty\CMSIS\Include;..\..\Code\ThirdParty\CMSIS\RTOS2\Include;..\..\Code\ThirdParty\CMSIS\RTOS2\RTX\Config;..\..\Code\ThirdParty\CMSIS\RTOS2\RTX\Include;..\..\Code\ThirdParty\lpc_core\lpc_chip\chip_15xx;..\..\Code\ThirdParty\lpc_core\lpc_chip\chip_15xx\config_15xx;..\..\Code\ThirdParty\lpc_core\lpc_chip\chip_common</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -417,16 +418,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>APP/Config</GroupName>
-          <Files>
-            <File>
-              <FileName>RTX_Conf_CM.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\APP\Config\RTX_Conf_CM.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>APP/Display</GroupName>
           <Files>
             <File>
@@ -504,6 +495,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\Code\APP\sensors\sensors.c</FilePath>
             </File>
+            <File>
+              <FileName>ultrasonic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\APP\sensors\ultrasonic.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -517,72 +513,92 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>APP/Ultrasonic</GroupName>
-          <Files>
-            <File>
-              <FileName>ultrasonic.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\APP\ultrasonic\ultrasonic.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>BSP</GroupName>
           <Files>
-            <File>
-              <FileName>adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\adc.c</FilePath>
-            </File>
             <File>
               <FileName>bsp.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Code\BSP\bsp.c</FilePath>
             </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>BSP/Device</GroupName>
+          <Files>
             <File>
-              <FileName>gpio.c</FileName>
+              <FileName>sysinit.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\gpio.c</FilePath>
+              <FilePath>..\..\Code\BSP\Device\sysinit.c</FilePath>
             </File>
             <File>
-              <FileName>i2c.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\i2c.c</FilePath>
-            </File>
-            <File>
-              <FileName>pwm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\pwm.c</FilePath>
-            </File>
-            <File>
-              <FileName>rtc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\rtc.c</FilePath>
-            </File>
-            <File>
-              <FileName>spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\spi.c</FilePath>
-            </File>
-            <File>
-              <FileName>uart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\Code\BSP\uart.c</FilePath>
+              <FileName>keil_startup_lpc15xx.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>..\..\Code\BSP\Device\keil_startup_lpc15xx.s</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Startup</GroupName>
+          <GroupName>BSP/Periph</GroupName>
           <Files>
             <File>
-              <FileName>keil_startup_lpc15xx.s</FileName>
-              <FileType>2</FileType>
-              <FilePath>..\..\Code\Startup\keil_startup_lpc15xx.s</FilePath>
+              <FileName>adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\Periph\adc.c</FilePath>
             </File>
             <File>
-              <FileName>sysinit.c</FileName>
+              <FileName>gpio.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\Code\Startup\sysinit.c</FilePath>
+              <FilePath>..\..\Code\BSP\Periph\gpio.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\Periph\i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>pwm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\Periph\pwm.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\Periph\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\Periph\spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\BSP\Periph\uart.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ThirdParty/CMSIS/RTOS2/RTX</GroupName>
+          <Files>
+            <File>
+              <FileName>RTX_Config.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\ThirdParty\CMSIS\RTOS2\RTX\Config\RTX_Config.c</FilePath>
+            </File>
+            <File>
+              <FileName>RTX_Config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\Code\ThirdParty\CMSIS\RTOS2\RTX\Config\RTX_Config.h</FilePath>
+            </File>
+            <File>
+              <FileName>RTX_CM3.lib</FileName>
+              <FileType>4</FileType>
+              <FilePath>..\..\Code\ThirdParty\CMSIS\RTOS2\RTX\Library\RTX_CM3.lib</FilePath>
+            </File>
+            <File>
+              <FileName>rtx_lib.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Code\ThirdParty\CMSIS\RTOS2\RTX\Source\rtx_lib.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -747,20 +763,16 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>ThirdParty/RTX</GroupName>
-          <Files>
-            <File>
-              <FileName>RTX_CM3.lib</FileName>
-              <FileType>4</FileType>
-              <FilePath>..\..\Code\ThirdParty\RTX\RTX_CM3.lib</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>Utils</GroupName>
         </Group>
       </Groups>
     </Target>
   </Targets>
+
+  <RTE>
+    <apis/>
+    <components/>
+    <files/>
+  </RTE>
 
 </Project>

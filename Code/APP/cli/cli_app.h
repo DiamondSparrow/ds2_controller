@@ -60,9 +60,9 @@ bool cli_app_init(void);
 /**
  * @brief   CLI application thread.
  *
- * @param   arg Pointer to thread arguments.
+ * @param   arguments   Pointer to thread arguments.
  */
-void cli_app_thread(void const *arg);
+void cli_app_thread(void *arguments);
 
 #ifdef __cplusplus
 }

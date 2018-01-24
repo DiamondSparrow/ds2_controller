@@ -26,8 +26,8 @@
 
 #include "bh1750.h"
 
-#include "i2c.h"
-#include "cmsis_os.h"
+#include "periph/i2c.h"
+#include "cmsis_os2.h"
 
 /**********************************************************************************************************************
  * Private constants

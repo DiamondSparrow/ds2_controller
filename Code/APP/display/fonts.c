@@ -21,6 +21,7 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
+#include <string.h>
 
 #include "fonts.h"
 
@@ -371,7 +372,7 @@ uint8_t *fonts_get_string_size(uint8_t *str, fonts_size_t *font_size, fonts_t *f
 {
     /* Fill settings */
     font_size->height = font->font_height;
-    font_size->length = font->font_width * strlen(str);
+    font_size->length = font->font_width * strlen((const char *)str);
 
     /* Return pointer */
     return str;

@@ -25,11 +25,11 @@
 #include "chip.h"
 
 #include "bsp.h"
-#include "adc.h"
-#include "gpio.h"
-#include "spi.h"
-#include "rtc.h"
-#include "uart.h"
+#include "periph/adc.h"
+#include "periph/gpio.h"
+#include "periph/spi.h"
+#include "periph/rtc.h"
+#include "periph/uart.h"
 
 /**********************************************************************************************************************
  * Private constants

@@ -25,7 +25,7 @@
 #include <string.h>
 
 
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 #include "cli_app.h"
 #include "cli_cmd.h"
@@ -40,11 +40,17 @@
 #define CLI_APP_RX_SIZE     128
 #define CLI_APP_TX_SIZE     128
 
+/** CLI application thread attributes. */
+const osThreadAttr_t cli_app_thread_attr =
+{
+    .name = "CLI_APP",
+    .stack_size = 512,
+    .priority = osPriorityNormal,
+};
+
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-/** Define CLI application thread */
-osThreadDef(cli_app_thread, osPriorityNormal, 1, 512);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -54,7 +60,7 @@ osThreadDef(cli_app_thread, osPriorityNormal, 1, 512);
  * Private variables
  *********************************************************************************************************************/
 /** Application thread ID. */
-osThreadId cli_app_thread_id;
+osThreadId_t cli_app_thread_id;
 uint8_t cli_app_rx_data[CLI_APP_RX_SIZE] = {0};
 uint8_t cli_app_tx_data[CLI_APP_RX_SIZE] = {0};
 
@@ -75,7 +81,7 @@ bool cli_app_init(void)
     cli_init();
 
     // Create application thread.
-    if((cli_app_thread_id = osThreadCreate(osThread(cli_app_thread), NULL)) == NULL)
+    if((cli_app_thread_id = osThreadNew(&cli_app_thread, NULL, &cli_app_thread_attr)) == NULL)
     {
         return false;
     }
@@ -83,11 +89,9 @@ bool cli_app_init(void)
     return true;
 }
 
-void cli_app_thread(void const *arg)
+void cli_app_thread(void *arguments)
 {
     uint32_t rx_count = 0;
-
-    cli_cmd_register();
 
     while(1)
     {

@@ -26,10 +26,10 @@
 
 #include "sensors/joystick.h"
 
-#include "adc.h"
-#include "gpio.h"
+#include "periph/adc.h"
+#include "periph/gpio.h"
 
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 /**********************************************************************************************************************
  * Private constants

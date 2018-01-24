@@ -26,7 +26,7 @@
 #include <stdarg.h>
 
 #include "bsp.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 #include "debug.h"
 
@@ -37,7 +37,6 @@
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-osSemaphoreDef(debug_lock);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -46,7 +45,7 @@ osSemaphoreDef(debug_lock);
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-osSemaphoreId debug_lock_id;
+osSemaphoreId_t debug_lock_id;
 uint8_t debug_buffer[DEBUG_BUFFER_SIZE] = {0};
 
 /**********************************************************************************************************************
@@ -62,7 +61,7 @@ uint8_t debug_buffer[DEBUG_BUFFER_SIZE] = {0};
  *********************************************************************************************************************/
 bool debug_init(void)
 {
-    if((debug_lock_id = osSemaphoreCreate(osSemaphore(debug_lock), 1)) == NULL)
+    if((debug_lock_id = osSemaphoreNew(1, 1, 0)) == NULL)
     {
         return false;
     }
@@ -89,7 +88,7 @@ void debug_send_os(const char *fmt, ...)
     uint16_t i = 0;
     va_list args;
 
-    if (osSemaphoreWait(debug_lock_id, DEBUG_LOCK_TIMEOUT) >= 0)
+    if (osSemaphoreAcquire(debug_lock_id, DEBUG_LOCK_TIMEOUT) >= 0)
     {
         va_start(args, fmt);
         i = vsnprintf((char*)debug_buffer, DEBUG_BUFFER_SIZE - 1, fmt, args);

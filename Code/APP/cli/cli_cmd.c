@@ -49,39 +49,38 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-static const cli_cmd_t cli_cmd_help =
+/** The definition of the list of commands. Commands that are registered are added to this list. */
+const cli_cmd_t cli_cmd_list[CLI_CMD_COUNT] =
 {
-    (const uint8_t *)"help",
-    (const uint8_t *)"help  Lists all the registered commands.",
-    cli_cmd_help_cb,
-    0,
-};
-const cli_cmd_t cli_cmd_info =
-{
-    (const uint8_t *)"info",
-    (const uint8_t *)"info  Shows device information.",
-    cli_cmd_info_cb,
-    0,
-};
-const cli_cmd_t cli_cmd_servo =
-{
-    (const uint8_t *)"servo",
-    (const uint8_t *)"servo $servo %action $angle: Control servo.",
-    cli_cmd_servo_cb,
-    3,
-};
-const cli_cmd_t cli_cmd_pointer =
-{
-    (const uint8_t *)"pointer",
-    (const uint8_t *)"pointer $pan %$tilt $angle: Control pointer.",
-    cli_cmd_pointer_cb,
-    2,
+    {
+        (const uint8_t *)"help",
+        (const uint8_t *)"help      Lists all the registered commands.",
+        cli_cmd_help_cb,
+        0,
+    },
+    {
+        (const uint8_t *)"info",
+        (const uint8_t *)"info      Shows device information.",
+        cli_cmd_info_cb,
+        0,
+    },
+    {
+        (const uint8_t *)"servo",
+        (const uint8_t *)"servo     Control servo:$servo %action $angle.",
+        cli_cmd_servo_cb,
+        3,
+    },
+    {
+        (const uint8_t *)"pointer",
+        (const uint8_t *)"pointer   Control pointer: $pan %$tilt $angle.",
+        cli_cmd_pointer_cb,
+        2,
+    },
 };
 
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-extern cli_cmd_t cli_reg_cmd[CLI_CMD_MAX_SIZE];
 
 /**********************************************************************************************************************
  * Prototypes of local functions
@@ -94,16 +93,6 @@ extern cli_cmd_t cli_reg_cmd[CLI_CMD_MAX_SIZE];
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
-void cli_cmd_register(void)
-{
-    cli_register_cmd((const cli_cmd_t *)&cli_cmd_help);
-    cli_register_cmd((const cli_cmd_t *)&cli_cmd_info);
-    cli_register_cmd((const cli_cmd_t *)&cli_cmd_servo);
-    cli_register_cmd((const cli_cmd_t *)&cli_cmd_pointer);
-
-    return;
-}
-
 bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd)
 {
     uint8_t i = 0;
@@ -112,11 +101,11 @@ bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd)
 
     /* Return the next command help string, before moving the pointer on to
      the next command in the list. */
-    for(i = 0; i < CLI_CMD_MAX_SIZE; i++)
+    for(i = 0; i < CLI_CMD_COUNT; i++)
     {
-        if(strlen((char *)cli_reg_cmd[i].help) > 2)
+        if(strlen((char *)cli_cmd_list[i].help) > 2)
         {
-            DEBUG("%s", cli_reg_cmd[i].help);
+            DEBUG("%s", cli_cmd_list[i].help);
         }
     }
 

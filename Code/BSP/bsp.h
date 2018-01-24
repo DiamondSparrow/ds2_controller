@@ -29,13 +29,13 @@ extern "C" {
  *********************************************************************************************************************/
 #include "chip.h"
 
-#include "adc.h"
-#include "gpio.h"
-#include "i2c.h"
-#include "pwm.h"
-#include "rtc.h"
-#include "spi.h"
-#include "uart.h"
+#include "periph/adc.h"
+#include "periph/gpio.h"
+#include "periph/i2c.h"
+#include "periph/pwm.h"
+#include "periph/rtc.h"
+#include "periph/spi.h"
+#include "periph/uart.h"
 
 /**********************************************************************************************************************
  * Exported constants

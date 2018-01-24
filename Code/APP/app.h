@@ -48,13 +48,6 @@ extern "C" {
  * Prototypes of exported functions
  *********************************************************************************************************************/
 /**
- * @brief   Application main thread.
- *
- * @param   arg Pointer to thread arguments.
- */
-void app_thread(void const *arg);
-
-/**
  * @brief   Application error handler.
  */
 void app_error(void);

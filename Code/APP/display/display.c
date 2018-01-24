@@ -32,7 +32,7 @@
 #include "sensors/joystick.h"
 #include "motor/motor.h"
 
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include "bsp.h"
 
 /**********************************************************************************************************************
@@ -44,11 +44,17 @@
 #define DISPLAY_LINE_Y_3    40
 #define DISPLAY_LINE_Y_4    51
 
+/** Display thread attributes. */
+const osThreadAttr_t display_thread_attr =
+{
+    .name = "DISPLAY",
+    .stack_size = 1024,
+    .priority = osPriorityNormal,
+};
+
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-/** Define application thread */
-osThreadDef(display_thread, osPriorityNormal, 1, 1024);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -67,7 +73,7 @@ typedef struct
  * Private variables
  *********************************************************************************************************************/
 /** Display thread ID. */
-osThreadId display_thread_id;
+osThreadId_t display_thread_id;
 
 volatile display_menu_id_t display_menu_id = DISPLAY_MENU_ID_WELCOME;
 volatile display_menu_t display_menus[DISPLAY_MENU_ID_LAST] = {0};
@@ -121,7 +127,7 @@ bool display_init(void)
     display_menu_set(DISPLAY_MENU_ID_WELCOME);
 
     // Create display thread.
-    if((display_thread_id = osThreadCreate(osThread(display_thread), NULL)) == NULL)
+    if((display_thread_id = osThreadNew(&display_thread, NULL, &display_thread_attr)) == NULL)
     {
         // Failed to create a thread.
         return false;
@@ -130,7 +136,7 @@ bool display_init(void)
     return true;
 }
 
-void display_thread(void const *arg)
+void display_thread(void *arguments)
 {
     display_menu_id_t id = DISPLAY_MENU_ID_WELCOME;
 

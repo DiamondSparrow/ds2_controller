@@ -24,11 +24,12 @@
 #include <string.h>
 
 #include "ssd1306.h"
-#include "i2c.h"
-#include "spi.h"
-#include "gpio.h"
 
-#include "cmsis_os.h"
+#include "periph/i2c.h"
+#include "periph/spi.h"
+#include "periph/gpio.h"
+
+#include "cmsis_os2.h"
 
 /**********************************************************************************************************************
  * Private constants

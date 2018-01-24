@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 #include "servo.h"
 #include "bsp.h"

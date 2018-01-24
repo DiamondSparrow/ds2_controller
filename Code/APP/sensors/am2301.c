@@ -23,11 +23,11 @@
 #include <stdint.h>
 
 #include "am2301.h"
-#include "gpio.h"
+#include "periph/gpio.h"
 #include "chip.h"
 
 #include "debug.h"
-#include "cmsis_os.h" 
+#include "cmsis_os2.h" 
 
 /**********************************************************************************************************************
  * Private constants

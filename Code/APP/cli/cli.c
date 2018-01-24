@@ -25,6 +25,7 @@
 #include <stdbool.h>
 
 #include "cli.h"
+#include "cli_cmd.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -44,14 +45,11 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/** The definition of the list of commands. Commands that are registered are added to this list. */
-cli_cmd_t cli_reg_cmd[CLI_CMD_MAX_SIZE] = {0};
-/** Commands register index. */
-static uint8_t cli_reg_cmd_index = 0;
 
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
+extern const cli_cmd_t cli_cmd_list[CLI_CMD_COUNT];
 
 /**********************************************************************************************************************
  * Prototypes of local functions
@@ -71,23 +69,7 @@ static int8_t cli_get_prm_count(const uint8_t *cmd);
  *********************************************************************************************************************/
 void cli_init(void)
 {
-    cli_reg_cmd_index = 0;
-    memset(cli_reg_cmd, 0, sizeof(cli_cmd_t) * CLI_CMD_MAX_SIZE);
-
     return;
-}
-
-bool cli_register_cmd(const cli_cmd_t *cmd)
-{
-    if(cli_reg_cmd_index >= CLI_CMD_MAX_SIZE)
-    {
-        return false;
-    }
-
-    memcpy(&cli_reg_cmd[cli_reg_cmd_index], cmd, sizeof(cli_cmd_t));
-    cli_reg_cmd_index++;
-
-    return true;
 }
 
 bool cli_process_cmd(const uint8_t * const input, uint8_t *buffer, size_t size)
@@ -99,9 +81,9 @@ bool cli_process_cmd(const uint8_t * const input, uint8_t *buffer, size_t size)
     size_t reg_cmd_str_len = 0;
 
     /* Search for the command string in the list of registered commands. */
-    for(i = 0; i < CLI_CMD_MAX_SIZE; i++)
+    for(i = 0; i < CLI_CMD_COUNT; i++)
     {
-        reg_cmd_str = cli_reg_cmd[i].cmd;
+        reg_cmd_str = cli_cmd_list[i].cmd;
         reg_cmd_str_len = strlen((char *)reg_cmd_str);
 
         /* To ensure the string lengths match exactly, so as not to pick up
@@ -117,9 +99,9 @@ bool cli_process_cmd(const uint8_t * const input, uint8_t *buffer, size_t size)
                  number of parameters.  If cExpectedNumberOfParameters is -1,
                  then there could be a variable number of parameters and no
                  check is made. */
-                if(cli_reg_cmd[i].prm_count >= 0)
+                if(cli_cmd_list[i].prm_count >= 0)
                 {
-                    if(cli_get_prm_count(input) != cli_reg_cmd[i].prm_count)
+                    if(cli_get_prm_count(input) != cli_cmd_list[i].prm_count)
                     {
                         res = 2;
                     }
@@ -140,9 +122,9 @@ bool cli_process_cmd(const uint8_t * const input, uint8_t *buffer, size_t size)
     else if(res == 1)
     {
         /* Call the callback function that is registered to this command. */
-        if(cli_reg_cmd[i].callback != NULL)
+        if(cli_cmd_list[i].callback != NULL)
         {
-            ret = cli_reg_cmd[i].callback(buffer, size, input);
+            ret = cli_cmd_list[i].callback(buffer, size, input);
         }
     }
     else

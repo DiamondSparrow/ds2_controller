@@ -31,17 +31,22 @@
 #include "sensors/filters.h"
 
 #include "debug.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
+/** Sensors thread attributes. */
+const osThreadAttr_t sensors_thread_attr =
+{
+    .name = "SENSORS",
+    .stack_size = 1024,
+    .priority = osPriorityNormal,
+};
 
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-/** Define application thread */
-osThreadDef(sensors_thread, osPriorityNormal, 1, 1024);
 
 /**********************************************************************************************************************
  * Private typedef
@@ -51,7 +56,7 @@ osThreadDef(sensors_thread, osPriorityNormal, 1, 1024);
  * Private variables
  *********************************************************************************************************************/
 /** Display thread ID. */
-osThreadId sensors_thread_id;
+osThreadId_t sensors_thread_id;
 filters_low_pass_t sensors_light_lp_filter = {0};
 volatile sensors_data_t sensors_data = {0};
 
@@ -72,7 +77,7 @@ bool sensors_init(void)
     dht11_init();
 
     // Create sensors thread.
-    if((sensors_thread_id = osThreadCreate(osThread(sensors_thread), NULL)) == NULL)
+    if((sensors_thread_id = osThreadNew(&sensors_thread, NULL, &sensors_thread_attr)) == NULL)
     {
         // Failed to create a thread.
         return false;
@@ -82,7 +87,7 @@ bool sensors_init(void)
 }
 
 
-void sensors_thread(void const *arg)
+void sensors_thread(void *arguments)
 {
     dht11_data_t dht11_data = {0};
     uint16_t light = 0;

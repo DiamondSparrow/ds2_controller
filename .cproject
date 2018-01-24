@@ -28,10 +28,12 @@
 									<listOptionValue builtIn="false" value="&quot;C:\Keil_v5\ARM\ARMCC\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/APP}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/CMSIS/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/CMSIS/RTOS2/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/CMSIS/RTOS2/RTX/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/CMSIS/RTOS2/RTX/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/lpc_core/lpc_chip/chip_15xx}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/lpc_core/lpc_chip/chip_15xx/config_15xx}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/lpc_core/lpc_chip/chip_common}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/ThirdParty/RTX}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/ds2_controller/Code/Utils}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1688485947" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">

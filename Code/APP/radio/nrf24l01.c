@@ -23,8 +23,8 @@
 #include <stdint.h>
 
 #include "nrf24l01.h"
-#include "spi.h"
-#include "gpio.h"
+#include "periph/spi.h"
+#include "periph/gpio.h"
 
 /**********************************************************************************************************************
  * Private constants

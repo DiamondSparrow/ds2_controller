@@ -69,7 +69,7 @@ extern volatile sensors_data_t sensors_data;
  * Prototypes of exported functions
  *********************************************************************************************************************/
 bool sensors_init(void);
-void sensors_thread(void const *arg);
+void sensors_thread(void *arguments);
 
 #ifdef __cplusplus
 }

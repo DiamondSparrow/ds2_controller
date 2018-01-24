@@ -63,7 +63,7 @@ typedef enum
  * Prototypes of exported functions
  *********************************************************************************************************************/
 bool display_init(void);
-void display_thread(void const *arg);
+void display_thread(void *arguments);
 void display_menu_set(display_menu_id_t id);
 
 #ifdef __cplusplus

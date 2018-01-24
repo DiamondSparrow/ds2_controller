@@ -54,7 +54,7 @@ typedef enum
  * Prototypes of exported functions
  *********************************************************************************************************************/
 bool motor_init(void);
-void motor_thread(void const *arg);
+void motor_thread(void *arguments);
 
 void motor_ramp_set(uint16_t ramp);
 void motor_forward(motor_id_t motor, uint8_t speed);

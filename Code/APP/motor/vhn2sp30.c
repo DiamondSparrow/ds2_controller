@@ -24,8 +24,8 @@
 
 #include "vhn2sp30.h"
 
-#include "gpio.h"
-#include "pwm.h"
+#include "periph/gpio.h"
+#include "periph/pwm.h"
 
 /**********************************************************************************************************************
  * Private constants
