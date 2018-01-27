@@ -267,19 +267,19 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
     return 1;
 }
 
-void nrf24l01_set_my_address(uint8_t *adr)
+void nrf24l01_set_my_address(uint8_t *addr)
 {
     NRF24L01_CE_LOW;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, adr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, 5);
     NRF24L01_CE_HIGH;
 
     return;
 }
 
-void nrf24l01_set_tx_address(uint8_t *adr)
+void nrf24l01_set_tx_address(uint8_t *addr)
 {
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, adr, 5);
-    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, adr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, addr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, addr, 5);
 
     return;
 }

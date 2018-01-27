@@ -103,9 +103,9 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size);
  * @note    "Own" address of one device must be the same as "TX" address of other device (and vice versa),
  *          if you want to get successful communication.
  *
- * @param   adr Pointer to 5-bytes length array with address
+ * @param   addr    Pointer to 5-bytes length array with address.
  */
-void nrf24l01_set_my_address(uint8_t *adr);
+void nrf24l01_set_my_address(uint8_t *addr);
 
 /**
  * @brief   Sets address you will communicate with.
@@ -113,9 +113,9 @@ void nrf24l01_set_my_address(uint8_t *adr);
  * @note    "Own" address of one device must be the same as "TX" address of other device (and vice versa),
  *          if you want to get successful communication.
  *
- * @param   adr Pointer to 5-bytes length array with address
+ * @param   addr    Pointer to 5-bytes length array with address.
  */
-void nrf24l01_set_tx_address(uint8_t *adr);
+void nrf24l01_set_tx_address(uint8_t *addr);
 
 /**
  * @brief   Gets number of retransmissions needed in last transmission.
