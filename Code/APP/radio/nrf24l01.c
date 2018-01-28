@@ -22,6 +22,8 @@
  *********************************************************************************************************************/
 #include <stdint.h>
 
+#include "debug.h"
+
 #include "nrf24l01.h"
 #include "periph/spi.h"
 #include "periph/gpio.h"
@@ -148,13 +150,13 @@
  * Private definitions and macros
  *********************************************************************************************************************/
 /** Pins configuration */
-#define NRF24L01_CE_LOW             gpio_output_low(GPIO_NRF214L01_CE)
-#define NRF24L01_CE_HIGH            gpio_output_high(GPIO_NRF214L01_CE)
-#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_NRF214L01_CSN)
-#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_NRF214L01_CSN)
+#define NRF24L01_CE_LOW             gpio_output_low(GPIO_DISPLAY_DC)
+#define NRF24L01_CE_HIGH            gpio_output_high(GPIO_DISPLAY_DC)
+#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_DISPLAY_SELECT)
+#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_DISPLAY_SELECT)
 
 /** Clear interrupt flags */
-#define NRF24L01_CLEAR_INTERRUPTS   do { nrf24l01_write_register(0x07, 0x70); } while (0)
+#define NRF24L01_CLEAR_INTERRUPTS   do { nrf24l01_write_register(NRF24L01_REG_STATUS, 0x70); } while (0)
 
 /** Gets interrupt status from device */
 #define NRF24L01_GET_INTERRUPTS     nrf24l01_get_status()
@@ -311,6 +313,10 @@ void nrf24l01_power_up_rx(void)
     // Start listening.
     NRF24L01_CE_HIGH;
 
+    uint8_t reg = 0;
+    reg = nrf24l01_read_register(NRF24L01_REG_CONFIG);
+    DEBUG("R%02X = %02X", NRF24L01_REG_CONFIG, reg);
+
     return;
 }
 
@@ -453,7 +459,7 @@ uint8_t nrf24l01_get_status(void)
 
     NRF24L01_CSN_LOW;
     /* First received byte is always status register */
-    spi_0_read_buffer((uint8_t *)status, 1);
+    spi_0_read_buffer((uint8_t *)&status, 1);
     /* Pull up chip select */
     NRF24L01_CSN_HIGH;
 
@@ -480,7 +486,7 @@ uint8_t nrf24l01_read_register(uint8_t reg)
 
     NRF24L01_CSN_LOW;
     spi_0_write_buffer((uint8_t *)NRF24L01_READ_REGISTER_MASK(reg), 1);
-    spi_0_read_buffer((uint8_t *)value, 1);
+    spi_0_read_buffer((uint8_t *)&value, 1);
     NRF24L01_CSN_HIGH;
 
     return value;
@@ -514,7 +520,7 @@ void nrf24l01_write_register(uint8_t reg, uint8_t value)
 {
     NRF24L01_CSN_LOW;
     spi_0_write_buffer((uint8_t *)NRF24L01_WRITE_REGISTER_MASK(reg), 1);
-    spi_0_write_buffer((uint8_t *)value, 1);
+    spi_0_write_buffer((uint8_t *)&value, 1);
     NRF24L01_CSN_HIGH;
 
     return;

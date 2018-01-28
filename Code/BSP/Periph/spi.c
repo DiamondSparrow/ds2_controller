@@ -26,6 +26,7 @@
 #include "chip.h"
 
 #include "spi.h"
+#include "debug.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -82,29 +83,30 @@ void spi_0_init(void)
      */
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 27, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 28, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 12, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 6, (IOCON_MODE_INACT | IOCON_DIGMODE_EN | IOCON_MODE_PULLUP));
     //Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 29,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
-    Chip_SWM_MovablePinAssign(SWM_SPI0_SCK_IO, 27);      // P0.27
-    Chip_SWM_MovablePinAssign(SWM_SPI0_MOSI_IO, 28);     // P0.28
-    Chip_SWM_MovablePinAssign(SWM_SPI0_MISO_IO, 12);     // P0.12
-    //Chip_SWM_MovablePinAssign(SWM_SPI0_SSELSN_0_IO, 29);  // P0.29
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_SCK_IO, 0, 27);  // P0.27
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_MOSI_IO, 0, 28); // P0.28
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_MISO_IO, 1, 6);  // P0.12
+    //Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 29);  // P0.29
 
     // Disable the clock to the Switch Matrix to save power .
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
     // Initialize SPI Block.
     Chip_SPI_Init(LPC_SPI0);
+
     // Set SPI Config register.
-    spi_cfg.ClkDiv      = 4;                    // Set Clock divider to maximum
+    spi_cfg.ClkDiv      = 17;                   // Set Clock divider to maximum
     spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
-    spi_cfg.ClockMode   = SPI_CLOCK_MODE0;      // Enable Mode 0
+    spi_cfg.ClockMode   = SPI_CLOCK_MODE2;      // Enable Mode 0
     spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
     // Slave select polarity is active low.
     spi_cfg.SSELPol     = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
     Chip_SPI_SetConfig(LPC_SPI0, &spi_cfg);
+
     // Set Delay register.
-    
     spi_delay_cfg.PreDelay      = 0;
     spi_delay_cfg.PostDelay     = 0;
     spi_delay_cfg.FrameDelay    = 0;
@@ -131,7 +133,8 @@ void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    uint32_t ret = Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    DEBUG("SPI0-R %d", ret);
 
     for(i = 1; i < (size + 1) && i < SPI_0_RX_BUFFER_SIZE; i++)
     {
@@ -167,7 +170,8 @@ void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    Chip_SPI_WriteFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    uint32_t ret = Chip_SPI_WriteFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    DEBUG("SPI0-W %d", ret);
 
     return;
 }
@@ -191,7 +195,8 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    uint32_t ret = Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    DEBUG("SPI0-RW %d", ret);
 
     for(i = 1; i < (rx_size + 1) && i < SPI_0_RX_BUFFER_SIZE; i++)
     {

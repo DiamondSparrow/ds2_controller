@@ -41,6 +41,7 @@
 #include "sensors/joystick.h"
 #include "sensors/ultrasonic.h"
 #include "servo/servo.h"
+#include "radio/nrf24l01.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -49,7 +50,7 @@
 const osThreadAttr_t app_thread_attr =
 {
     .name = "APP",
-    .stack_size = 512,
+    .stack_size = 1024,
     .priority = osPriorityNormal,
 };
 
@@ -160,12 +161,12 @@ void app_error(void)
 
 static void app_thread(void *arguments)
 {
-    display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
+    //display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
     uint8_t ret = 0;
-    uint8_t c = 0;
-    uint8_t d = 0;
-    bool sw_left = false;
-    bool sw_right = false;
+    //uint8_t c = 0;
+    //uint8_t d = 0;
+    //bool sw_left = false;
+    //bool sw_right = false;
 
     debug_init();
     DEBUG_INIT(" * Initializing.");
@@ -175,18 +176,22 @@ static void app_thread(void *arguments)
     DEBUG_INIT("%-15.15s ok.", "Indication:");
     cli_app_init();
     DEBUG_INIT("%-15.15s ok.", "CLI APP:");
-    servo_init();
-    DEBUG_INIT("%-15.15s ok.", "Servo:");
-    ultrasonic_init();
-    DEBUG_INIT("%-15.15s ok.", "Ultrasonic:");
-    ret = joystick_init();
-    DEBUG_INIT("%-15.15s %s.", "Joystick:", ret == false ? "err" : "ok");
+    //servo_init();
+    //DEBUG_INIT("%-15.15s ok.", "Servo:");
+    //ultrasonic_init();
+    //DEBUG_INIT("%-15.15s ok.", "Ultrasonic:");
+    //ret = joystick_init();
+    //DEBUG_INIT("%-15.15s %s.", "Joystick:", ret == false ? "err" : "ok");
     //ret = sensors_init();
     //DEBUG_INIT("%-15.15s %s.", "Sensors:", ret == false ? "err" : "ok");
-    ret = motor_init();
-    DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
-    ret = display_init();
-    DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
+    //ret = motor_init();
+    //DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
+    //ret = display_init();
+    //DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
+
+    nrf24l01_init(1, 32);
+    ret = nrf24l01_get_status();
+    DEBUG_INIT("%-15.15s %02X", "NRF24L01", ret);
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
@@ -196,13 +201,14 @@ static void app_thread(void *arguments)
 
     osDelay(1000);
 
-    menu_id = DISPLAY_MENU_ID_CLOCK;
-    display_menu_set(menu_id);
+    //menu_id = DISPLAY_MENU_ID_CLOCK;
+    //display_menu_set(menu_id);
     //motor_test_ramp(MOTOR_ID_LEFT, 10);
     //motor_test_ramp(MOTOR_ID_RIGHT, 10);
 
     while(1)
     {
+        /*
         d = 20;
         c = 0;
         while(d--)
@@ -258,6 +264,7 @@ static void app_thread(void *arguments)
         {
             sw_right = false;
         }
+        */
         osDelay(10);
     }
 }
