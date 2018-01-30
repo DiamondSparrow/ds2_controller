@@ -71,7 +71,6 @@ osThreadId_t app_thread_id;
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
-extern uint8_t nrf24l01_read_register(uint8_t reg);
 
 /**********************************************************************************************************************
  * Prototypes of local functions
@@ -190,9 +189,9 @@ static void app_thread(void *arguments)
     //ret = display_init();
     //DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
 
-    nrf24l01_init(1, 32);
-    ret = nrf24l01_get_status();
-    DEBUG_INIT("%-15.15s %02X", "NRF24L01", ret);
+    nrf24l01_init(1, 4);
+    nrf24l01_set_my_address((uint8_t []){0x00, 0xDE, 0xAD, 0xBE, 0xAF});
+    nrf24l01_set_tx_address((uint8_t []){0x00, 0xBE, 0xAF, 0xDE, 0xAD});
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
@@ -209,9 +208,11 @@ static void app_thread(void *arguments)
 
     while(1)
     {
-        
-        ret = nrf24l01_read_register(2);
-        DEBUG("%-15.15s %02X", "NRF24L01", ret);
+        ret = nrf24l01_get_status();
+        DEBUG_INIT("NRF24L01 status %02X", ret);
+        nrf24l01_transmit((uint8_t []){0x01, 0x02, 0x03, 0x04});
+        ret = nrf24l01_get_tx_status();
+        DEBUG_INIT("NRF24L01 TX status %02X", ret);
         /*
         d = 20;
         c = 0;
@@ -269,7 +270,7 @@ static void app_thread(void *arguments)
             sw_right = false;
         }
         */
-        osDelay(50);
+        osDelay(1000);
     }
 }
 

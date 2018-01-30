@@ -68,7 +68,7 @@ const gpio_item_t gpio_list[GPIO_LAST] =
     {.port = 0, .pin =  7,  .dir = true,  .state = false,}, // GPIO_MOTOR_RIGHT_EN
     {.port = 0, .pin =  10, .dir = true,  .state = false,}, // GPIO_MOTOR_RIGHT_INA
     {.port = 1, .pin =  0,  .dir = true,  .state = false,}, // GPIO_MOTOR_RIGHT_INB
-    {.port = 1, .pin =  6,  .dir = true,  .state = true,},  // GPIO_DISPLAY_RESTART
+    //{.port = 1, .pin =  6,  .dir = true,  .state = true,},  // GPIO_DISPLAY_RESTART
     {.port = 1, .pin =  7,  .dir = true,  .state = true,},  // GPIO_DISPLAY_DC
     {.port = 1, .pin =  8,  .dir = true,  .state = true,},  // GPIO_DISPLAY_SELECT
 };

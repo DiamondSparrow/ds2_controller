@@ -31,8 +31,7 @@
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-#define SPI_0_TX_BUFFER_SIZE    128
-#define SPI_0_RX_BUFFER_SIZE    128
+#define SPI_0_BUFFER_SIZE       128
 #define SPI_1_TX_BUFFER_SIZE    128
 #define SPI_1_RX_BUFFER_SIZE    128
 
@@ -49,8 +48,8 @@
  *********************************************************************************************************************/
 /** SPI-0 Transfer Setup */
 static SPI_DATA_SETUP_T spi_0_xfer;
-static uint16_t spi_0_tx_buffer[SPI_0_TX_BUFFER_SIZE] = {0};
-static uint16_t spi_0_rx_buffer[SPI_0_RX_BUFFER_SIZE] = {0};
+static uint16_t spi_0_tx_buffer[SPI_0_BUFFER_SIZE] = {0};
+static uint16_t spi_0_rx_buffer[SPI_0_BUFFER_SIZE] = {0};
 /** SPI-1 Transfer Setup */
 static SPI_DATA_SETUP_T spi_1_xfer;
 static uint16_t spi_1_tx_buffer[SPI_1_TX_BUFFER_SIZE] = {0};
@@ -83,13 +82,13 @@ void spi_0_init(void)
      */
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 27, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 28, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 6, (IOCON_MODE_INACT | IOCON_DIGMODE_EN | IOCON_MODE_PULLUP));
-    //Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 29,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 6, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 8,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_SCK_IO, 0, 27);  // P0.27
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_MOSI_IO, 0, 28); // P0.28
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_MISO_IO, 1, 6);  // P0.12
-    //Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 29);  // P0.29
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 1, 8);  // P0.29
 
     // Disable the clock to the Switch Matrix to save power .
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
@@ -98,7 +97,7 @@ void spi_0_init(void)
     Chip_SPI_Init(LPC_SPI0);
 
     // Set SPI Config register.
-    spi_cfg.ClkDiv      = 17;                   // Set Clock divider to maximum
+    spi_cfg.ClkDiv      = 7;                    // Set Clock divider to maximum
     spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
     spi_cfg.ClockMode   = SPI_CLOCK_MODE2;      // Enable Mode 0
     spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
@@ -107,10 +106,10 @@ void spi_0_init(void)
     Chip_SPI_SetConfig(LPC_SPI0, &spi_cfg);
 
     // Set Delay register.
-    spi_delay_cfg.PreDelay      = 0;
-    spi_delay_cfg.PostDelay     = 0;
-    spi_delay_cfg.FrameDelay    = 0;
-    spi_delay_cfg.TransferDelay = 0;
+    spi_delay_cfg.PreDelay      = 2;
+    spi_delay_cfg.PostDelay     = 2;
+    spi_delay_cfg.FrameDelay    = 2;
+    spi_delay_cfg.TransferDelay = 2;
     Chip_SPI_DelayConfig(LPC_SPI0, &spi_delay_cfg);
 
     // Enable SPI0.
@@ -123,31 +122,28 @@ void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
 {
     uint16_t i = 0;
     uint16_t j = 0;
+    uint8_t shift = 0;
+    
+    if(size > SPI_0_BUFFER_SIZE)
+    {
+        return;
+    }
 
-    spi_0_xfer.pTx = NULL;                                                          /* Transmit Buffer */
-    spi_0_xfer.pRx = spi_0_rx_buffer;                                               /* Receive Buffer */
-    spi_0_xfer.DataSize = 8;                                                        /* Data size in bits */
-    spi_0_xfer.Length = size > SPI_0_RX_BUFFER_SIZE ? SPI_0_RX_BUFFER_SIZE : size;  /* Total frame length */
+    spi_0_xfer.pTx = NULL;              /* Transmit Buffer */
+    spi_0_xfer.pRx = spi_0_rx_buffer;   /* Receive Buffer */
+    spi_0_xfer.DataSize = 8;            /* Data size in bits */
+    spi_0_xfer.Length = size;           /* Total frame length */
     /* Assert only SSEL0 */
     spi_0_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
     uint32_t ret = Chip_SPI_ReadFrames_Blocking(LPC_SPI0, &spi_0_xfer);
-    DEBUG("SPI0-R %d: %02X", ret, spi_0_rx_buffer[0]);
 
-    for(i = 0; i < (size + 1) && i < SPI_0_RX_BUFFER_SIZE; i++)
+    for(i = 0; i < size; i++)
     {
-        //buffer[i] = spi_0_rx_buffer[j];
-        if(i % 2)
-        {
-            buffer[i] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
-        }
-        else
-        {
-            buffer[i] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
-        }
-        j++;
+        buffer[i] = (uint8_t)((spi_0_rx_buffer[j] >> shift) & 0xFF);
+        shift = shift == 8 ? 0 : 8 & j++;
     }
 
     return;
@@ -157,22 +153,26 @@ void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
 {
     uint16_t i = 0;
     
-    for(i = 0; i < size && i < SPI_0_TX_BUFFER_SIZE; i++)
+    if(size > SPI_0_BUFFER_SIZE)
+    {
+        return;
+    }
+    
+    for(i = 0; i < size; i++)
     {
         spi_0_tx_buffer[i] = buffer[i];
-    }    
+    }
 
-    spi_0_xfer.pTx = spi_0_tx_buffer;                                               /* Transmit Buffer */
-    spi_0_xfer.pRx = NULL;                                                          /* Receive Buffer */
-    spi_0_xfer.DataSize = 8;                                                        /* Data size in bits */
-    spi_0_xfer.Length = size > SPI_0_TX_BUFFER_SIZE ? SPI_0_TX_BUFFER_SIZE : size;  /* Total frame length */
+    spi_0_xfer.pTx = spi_0_tx_buffer;   /* Transmit Buffer */
+    spi_0_xfer.pRx = NULL;              /* Receive Buffer */
+    spi_0_xfer.DataSize = 8;            /* Data size in bits */
+    spi_0_xfer.Length = size;           /* Total frame length */
     /* Assert only SSEL0 */
     spi_0_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
     uint32_t ret = Chip_SPI_WriteFrames_Blocking(LPC_SPI0, &spi_0_xfer);
-    DEBUG("SPI0-W %d", ret);
 
     return;
 }
@@ -181,11 +181,23 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
 {
     uint16_t i = 0;
     uint16_t j = 0;
-    bool hilo = true;
-
-    for(i = 0; i < tx_size && i < SPI_0_TX_BUFFER_SIZE; i++)
+    uint8_t shift = 0;
+    
+    if((tx_size + rx_size) > SPI_0_BUFFER_SIZE)
     {
-        spi_0_tx_buffer[i] = tx[i];
+        return;
+    }
+
+    for(i = 0; i < (tx_size + rx_size); i++)
+    {
+        if(i < tx_size)
+        {
+            spi_0_tx_buffer[i] = tx[i];
+        }
+        else
+        {
+            spi_0_tx_buffer[i] = 0xFF;
+        }
     }
 
     spi_0_xfer.pTx = spi_0_tx_buffer;       /* Transmit Buffer */
@@ -198,24 +210,11 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
     spi_0_xfer.RxCnt = 0;
 
     uint32_t ret = Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
-    DEBUG("SPI0-RW %d", ret);
 
-    for(i = 0; i < (rx_size + tx_size) && i < SPI_0_RX_BUFFER_SIZE; i++)
+    for(i = 0; i < (rx_size + tx_size); i++)
     {
-        //rx[i - 1] = spi_0_rx_buffer[j];
-        if(hilo)
-        {
-            hilo = false;
-            rx[i] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
-            DEBUG("0: %d, %d", i, j);
-        }
-        else
-        {
-            hilo = true;
-            rx[i] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
-            DEBUG("1: %d, %d", i, j);
-            j++;
-        }
+        rx[i] = (uint8_t)((spi_0_rx_buffer[j] >> shift) & 0xFF);
+        shift = shift == 8 ? 0 : 8 & j++;
     }
 
     return;
