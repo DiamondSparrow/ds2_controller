@@ -71,6 +71,7 @@ osThreadId_t app_thread_id;
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
+extern uint8_t nrf24l01_read_register(uint8_t reg);
 
 /**********************************************************************************************************************
  * Prototypes of local functions
@@ -208,6 +209,9 @@ static void app_thread(void *arguments)
 
     while(1)
     {
+        
+        ret = nrf24l01_read_register(2);
+        DEBUG("%-15.15s %02X", "NRF24L01", ret);
         /*
         d = 20;
         c = 0;
@@ -265,7 +269,7 @@ static void app_thread(void *arguments)
             sw_right = false;
         }
         */
-        osDelay(10);
+        osDelay(50);
     }
 }
 

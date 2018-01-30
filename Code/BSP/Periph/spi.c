@@ -133,20 +133,21 @@ void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    uint32_t ret = Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
-    DEBUG("SPI0-R %d", ret);
+    uint32_t ret = Chip_SPI_ReadFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    DEBUG("SPI0-R %d: %02X", ret, spi_0_rx_buffer[0]);
 
-    for(i = 1; i < (size + 1) && i < SPI_0_RX_BUFFER_SIZE; i++)
+    for(i = 0; i < (size + 1) && i < SPI_0_RX_BUFFER_SIZE; i++)
     {
-        buffer[i - 1] = spi_0_rx_buffer[j];
+        //buffer[i] = spi_0_rx_buffer[j];
         if(i % 2)
         {
-            buffer[i - 1] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
+            buffer[i] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
         }
         else
         {
-            buffer[i - 1] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
+            buffer[i] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
         }
+        j++;
     }
 
     return;
@@ -180,6 +181,7 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
 {
     uint16_t i = 0;
     uint16_t j = 0;
+    bool hilo = true;
 
     for(i = 0; i < tx_size && i < SPI_0_TX_BUFFER_SIZE; i++)
     {
@@ -198,16 +200,21 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
     uint32_t ret = Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
     DEBUG("SPI0-RW %d", ret);
 
-    for(i = 1; i < (rx_size + 1) && i < SPI_0_RX_BUFFER_SIZE; i++)
+    for(i = 0; i < (rx_size + tx_size) && i < SPI_0_RX_BUFFER_SIZE; i++)
     {
-        rx[i - 1] = spi_0_rx_buffer[j];
-        if(i % 2)
+        //rx[i - 1] = spi_0_rx_buffer[j];
+        if(hilo)
         {
-            rx[i - 1] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
+            hilo = false;
+            rx[i] = (uint8_t)((spi_0_rx_buffer[j] >> 8) & 0xFF);
+            DEBUG("0: %d, %d", i, j);
         }
         else
         {
-            rx[i - 1] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
+            hilo = true;
+            rx[i] = (uint8_t)(spi_0_rx_buffer[j] & 0xFF);
+            DEBUG("1: %d, %d", i, j);
+            j++;
         }
     }
 

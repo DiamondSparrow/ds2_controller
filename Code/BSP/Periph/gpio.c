@@ -93,7 +93,7 @@ void gpio_init(void)
     Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 4, (IOCON_MODE_PULLUP | IOCON_HYS_EN | IOCON_S_MODE_0CLK));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 5, (IOCON_MODE_PULLUP | IOCON_HYS_EN | IOCON_S_MODE_0CLK));
 
-    for(i = 0; i < GPIO_LAST - 9; i++)
+    for(i = 0; i < GPIO_LAST; i++)
     {
         Chip_GPIO_SetPinDIR(LPC_GPIO, gpio_list[i].port, gpio_list[i].pin, gpio_list[i].dir);
         if(gpio_list[i].dir == true)
