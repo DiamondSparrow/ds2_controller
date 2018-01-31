@@ -158,7 +158,7 @@ void app_error(void)
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
-
+#define RADIO_MODE  1   // 1 - RX, 0 - TX
 static void app_thread(void *arguments)
 {
     //display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
@@ -167,6 +167,9 @@ static void app_thread(void *arguments)
     //uint8_t d = 0;
     //bool sw_left = false;
     //bool sw_right = false;
+#if RADIO_MODE
+    uint8_t data[32] = {0};
+#endif
 
     debug_init();
     DEBUG_INIT(" * Initializing.");
@@ -190,8 +193,10 @@ static void app_thread(void *arguments)
     //DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
 
     nrf24l01_init(1, 4);
-    nrf24l01_set_my_address((uint8_t []){0x00, 0xDE, 0xAD, 0xBE, 0xAF});
-    nrf24l01_set_tx_address((uint8_t []){0x00, 0xBE, 0xAF, 0xDE, 0xAD});
+    //nrf24l01_set_my_address((uint8_t []){0xE7,0xE7,0xE7,0xE7,0xE});
+    nrf24l01_set_my_address((uint8_t []){0xD7,0xD7,0xD7,0xD7,0xD7});
+    //nrf24l01_set_tx_address((uint8_t []){0xD7,0xD7,0xD7,0xD7,0xD7});
+    nrf24l01_set_tx_address((uint8_t []){0xE7,0xE7,0xE7,0xE7,0xE});
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
@@ -205,14 +210,32 @@ static void app_thread(void *arguments)
     //display_menu_set(menu_id);
     //motor_test_ramp(MOTOR_ID_LEFT, 10);
     //motor_test_ramp(MOTOR_ID_RIGHT, 10);
+#if RADIO_MODE
+    //nrf24l01_power_up_rx();
+#else
+    nrf24l01_transmit((uint8_t []){0x01, 0x02, 0x03, 0x04});
+#endif
 
     while(1)
     {
-        ret = nrf24l01_get_status();
-        DEBUG_INIT("NRF24L01 status %02X", ret);
-        nrf24l01_transmit((uint8_t []){0x01, 0x02, 0x03, 0x04});
+#if RADIO_MODE
+        osDelay(10);
+        if(nrf24l01_data_ready())
+        {
+            nrf24l01_get_data(data);
+            DEBUG("Data: %02X,%02X,%02X,%02X", data[0], data[1], data[2], data[3]);
+            memset(data, 0, sizeof(data));
+            //nrf24l01_power_up_rx();
+        }
+#else
+        osDelay(1000);
         ret = nrf24l01_get_tx_status();
-        DEBUG_INIT("NRF24L01 TX status %02X", ret);
+        if(ret == NRF24L01_TX_STATUS_OK || ret == NRF24L01_TX_STATUS_LOST)
+        {
+            DEBUG_INIT("NRF24L01 TX status %02X", ret);
+            nrf24l01_transmit((uint8_t []){0x01, 0x02, 0x03, 0x04});
+        }
+#endif
         /*
         d = 20;
         c = 0;
@@ -270,7 +293,6 @@ static void app_thread(void *arguments)
             sw_right = false;
         }
         */
-        osDelay(1000);
     }
 }
 

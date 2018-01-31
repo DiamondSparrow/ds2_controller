@@ -152,8 +152,8 @@
 /** Pins configuration */
 #define NRF24L01_CE_LOW             gpio_output_low(GPIO_DISPLAY_DC)
 #define NRF24L01_CE_HIGH            gpio_output_high(GPIO_DISPLAY_DC)
-#define NRF24L01_CSN_LOW            __nop() // gpio_output_low(GPIO_DISPLAY_SELECT)
-#define NRF24L01_CSN_HIGH           __nop() // gpio_output_high(GPIO_DISPLAY_SELECT)
+#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_DISPLAY_SELECT)
+#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_DISPLAY_SELECT)
 
 /** Clear interrupt flags */
 #define NRF24L01_CLEAR_INTERRUPTS   do { nrf24l01_write_register(NRF24L01_REG_STATUS, 0x70); } while (0)
@@ -221,7 +221,7 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
     nrf24l01_config.channel         = !channel; // Set channel to some different value for nrf24l01_set_channel() function
     nrf24l01_config.payload_size    = payload_size;
     nrf24l01_config.tx_power        = NRF24L01_TX_POWER_0DBM;
-    nrf24l01_config.data_rate       = NRF24L01_DATA_RATE_1M;
+    nrf24l01_config.data_rate       = NRF24L01_DATA_RATE_250K;
     
     /* Reset nRF24L01+ to power on registers values */
     nrf24l01_software_reset();
@@ -271,9 +271,16 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
 
 void nrf24l01_set_my_address(uint8_t *addr)
 {
+    uint8_t data[5] = {0};
     NRF24L01_CE_LOW;
     nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, 5);
     NRF24L01_CE_HIGH;
+    
+    NRF24L01_CE_LOW;
+    nrf24l01_read_register_multi(NRF24L01_REG_RX_ADDR_P1, data, 5);
+    NRF24L01_CE_HIGH;
+    
+    DEBUG("ADDR: %02X,%02X,%02X,%02X,%02X", data[0], data[1], data[2], data[3], data[4]);
 
     return;
 }
@@ -295,7 +302,7 @@ uint8_t nrf24l01_get_retransmissions_count(void)
 void nrf24l01_power_up_tx(void)
 {
     NRF24L01_CLEAR_INTERRUPTS;
-    nrf24l01_write_register(NRF24L01_REG_CONFIG, NRF24L01_CONFIG | (0 << NRF24L01_PRIM_RX) | (1 << NRF24L01_PWR_UP));
+    nrf24l01_write_register(NRF24L01_REG_CONFIG, (NRF24L01_CONFIG | (0 << NRF24L01_PRIM_RX) | (1 << NRF24L01_PWR_UP)));
 
     return;
 }
@@ -309,7 +316,7 @@ void nrf24l01_power_up_rx(void)
     // Clear interrupts.
     NRF24L01_CLEAR_INTERRUPTS;
     // Setup RX mode.
-    nrf24l01_write_register(NRF24L01_REG_CONFIG, NRF24L01_CONFIG | 1 << NRF24L01_PWR_UP | 1 << NRF24L01_PRIM_RX);
+    nrf24l01_write_register(NRF24L01_REG_CONFIG, (NRF24L01_CONFIG | (1 << NRF24L01_PWR_UP) | (1 << NRF24L01_PRIM_RX)));
     // Start listening.
     NRF24L01_CE_HIGH;
 
@@ -328,12 +335,14 @@ nrf24l01_tx_status_t nrf24l01_get_tx_status(void)
 {
     uint8_t status = nrf24l01_get_status();
 
-    if(status & NRF24L01_TX_DS)
+    DEBUG("Status: %02X", status);
+    
+    if((status & (1 << NRF24L01_TX_DS)))
     {
         // Successfully sent.
         return NRF24L01_TX_STATUS_OK;
     }
-    else if(status & NRF24L01_MAX_RT)
+    else if((status & (1 << NRF24L01_MAX_RT)))
     {
         // Message lost.
         return NRF24L01_TX_STATUS_LOST;
@@ -375,7 +384,12 @@ uint8_t nrf24l01_data_ready(void)
 {
     uint8_t status = nrf24l01_get_status();
 
-    if(status & NRF24L01_RX_DR)
+    if(status != 0x0E)
+    {
+        DEBUG("Status: %02X", status);
+    }
+    
+    if((status & (1 << NRF24L01_RX_DR)))
     {
         return 1;
     }
@@ -491,7 +505,7 @@ uint8_t nrf24l01_read_register(uint8_t reg)
 void nrf24l01_read_register_multi(uint8_t reg, uint8_t *data, uint8_t count)
 {
     NRF24L01_CSN_LOW;
-    spi_0_write_read((uint8_t *)NRF24L01_READ_REGISTER_MASK(reg), 1, data, count);
+    spi_0_write_read((uint8_t []){NRF24L01_READ_REGISTER_MASK(reg)}, 1, data, count);
     NRF24L01_CSN_HIGH;
 
     return;
@@ -561,12 +575,21 @@ void nrf24l01_write_bit(uint8_t reg, uint8_t bit, uint8_t value)
 
 void nrf24l01_software_reset(void)
 {
+    uint8_t reg ;
     uint8_t data[5] = {0};
 
     nrf24l01_write_register(NRF24L01_REG_CONFIG,        NRF24L01_REG_DEFAULT_VAL_CONFIG);
+    reg = nrf24l01_read_register(NRF24L01_REG_CONFIG);
+    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_CONFIG, reg, NRF24L01_REG_DEFAULT_VAL_CONFIG);
     nrf24l01_write_register(NRF24L01_REG_EN_AA,         NRF24L01_REG_DEFAULT_VAL_EN_AA);
+    reg = nrf24l01_read_register(NRF24L01_REG_EN_AA);
+    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_EN_AA, reg, NRF24L01_REG_DEFAULT_VAL_EN_AA);
     nrf24l01_write_register(NRF24L01_REG_EN_RXADDR,     NRF24L01_REG_DEFAULT_VAL_EN_RXADDR);
+    reg = nrf24l01_read_register(NRF24L01_REG_EN_RXADDR);
+    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_EN_RXADDR, reg, NRF24L01_REG_DEFAULT_VAL_EN_RXADDR);
     nrf24l01_write_register(NRF24L01_REG_SETUP_AW,      NRF24L01_REG_DEFAULT_VAL_SETUP_AW);
+    reg = nrf24l01_read_register(NRF24L01_REG_SETUP_AW);
+    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_SETUP_AW, reg, NRF24L01_REG_DEFAULT_VAL_SETUP_AW);
     nrf24l01_write_register(NRF24L01_REG_SETUP_RETR,    NRF24L01_REG_DEFAULT_VAL_SETUP_RETR);
     nrf24l01_write_register(NRF24L01_REG_RF_CH,         NRF24L01_REG_DEFAULT_VAL_RF_CH);
     nrf24l01_write_register(NRF24L01_REG_RF_SETUP,      NRF24L01_REG_DEFAULT_VAL_RF_SETUP);
@@ -620,6 +643,6 @@ uint8_t nrf24l01_rx_fifo_empty(void)
 {
     uint8_t reg = nrf24l01_read_register(NRF24L01_REG_FIFO_STATUS);
 
-    return ((reg & NRF24L01_RX_EMPTY) ? 1 : 0);
+    return ((reg & (1 << NRF24L01_RX_EMPTY)) ? 1 : 0);
 }
 

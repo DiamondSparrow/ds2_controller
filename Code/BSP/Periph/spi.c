@@ -82,13 +82,13 @@ void spi_0_init(void)
      */
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 27, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 28, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 6, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 8,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 6, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN));
+    //Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 8,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_SCK_IO, 0, 27);  // P0.27
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_MOSI_IO, 0, 28); // P0.28
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_MISO_IO, 1, 6);  // P0.12
-    Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 1, 8);  // P0.29
+    //Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 1, 8);  // P0.29
 
     // Disable the clock to the Switch Matrix to save power .
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
@@ -99,7 +99,7 @@ void spi_0_init(void)
     // Set SPI Config register.
     spi_cfg.ClkDiv      = 7;                    // Set Clock divider to maximum
     spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
-    spi_cfg.ClockMode   = SPI_CLOCK_MODE2;      // Enable Mode 0
+    spi_cfg.ClockMode   = SPI_CLOCK_MODE0;      // Enable Mode 0
     spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
     // Slave select polarity is active low.
     spi_cfg.SSELPol     = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
@@ -196,7 +196,7 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
         }
         else
         {
-            spi_0_tx_buffer[i] = 0xFF;
+            spi_0_tx_buffer[i] = 0xFFFF;
         }
     }
 
