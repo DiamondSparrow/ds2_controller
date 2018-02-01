@@ -158,7 +158,7 @@ void app_error(void)
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
-#define RADIO_MODE  1   // 1 - RX, 0 - TX
+#define RADIO_MODE  0   // 1 - RX, 0 - TX
 static void app_thread(void *arguments)
 {
     //display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
@@ -228,7 +228,7 @@ static void app_thread(void *arguments)
             //nrf24l01_power_up_rx();
         }
 #else
-        osDelay(1000);
+        osDelay(100);
         ret = nrf24l01_get_tx_status();
         if(ret == NRF24L01_TX_STATUS_OK || ret == NRF24L01_TX_STATUS_LOST)
         {
@@ -236,6 +236,7 @@ static void app_thread(void *arguments)
             nrf24l01_transmit((uint8_t []){0x01, 0x02, 0x03, 0x04});
         }
 #endif
+        
         /*
         d = 20;
         c = 0;
