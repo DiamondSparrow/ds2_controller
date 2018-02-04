@@ -56,6 +56,7 @@ extern "C" {
 bool debug_init(void);
 void debug_send(const char *fmt, ...);
 void debug_send_os(const char *fmt, ...);
+void debug_send_hex_os(uint8_t *buffer, uint16_t size);
 void debug_send_blocking(uint8_t *data, uint32_t size);
 
 #ifdef __cplusplus

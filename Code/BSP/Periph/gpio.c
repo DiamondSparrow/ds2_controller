@@ -72,7 +72,7 @@ const gpio_item_t gpio_list[GPIO_LAST] =
     //{.port = 1, .pin =  6,  .dir = true,  .state = true,},  // GPIO_DISPLAY_RESTART
     */
     {.port = 0, .pin =  12,  .dir = true,  .state = true,},  // GPIO_DISPLAY_DC
-    {.port = 0, .pin =  9,  .dir = true,  .state = true,},  // GPIO_DISPLAY_SELECT
+    {.port = 0, .pin =  9,  .dir = true,  .state = false,},  // GPIO_DISPLAY_SELECT
 };
 /**********************************************************************************************************************
  * Exported variables

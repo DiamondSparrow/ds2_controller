@@ -88,7 +88,7 @@ void debug_send_os(const char *fmt, ...)
     uint16_t i = 0;
     va_list args;
 
-    if (osSemaphoreAcquire(debug_lock_id, DEBUG_LOCK_TIMEOUT) >= 0)
+    if (osSemaphoreAcquire(debug_lock_id, DEBUG_LOCK_TIMEOUT) == osOK)
     {
         va_start(args, fmt);
         i = vsnprintf((char*)debug_buffer, DEBUG_BUFFER_SIZE - 1, fmt, args);
@@ -99,6 +99,34 @@ void debug_send_os(const char *fmt, ...)
     }
 
     return;
+}
+
+void debug_send_hex_os(uint8_t *buffer, uint16_t size)
+{
+    uint16_t i = 0;
+    uint16_t c = 0;
+
+    if(osSemaphoreAcquire(debug_lock_id, DEBUG_LOCK_TIMEOUT) == osOK)
+    {
+        for(i = 0; i < size; i++)
+        {
+            if((c + 8) >= DEBUG_BUFFER_SIZE)
+            {
+                break;
+            }
+            if(i > 0)
+            {
+                c += snprintf((char*)&debug_buffer[c], (DEBUG_BUFFER_SIZE - c), ",%02X", buffer[i]);
+            }
+            else
+            {
+                c += snprintf((char*)&debug_buffer[c], (DEBUG_BUFFER_SIZE - c), "[%02X", buffer[i]);
+            }
+        }
+        c += snprintf((char*)&debug_buffer[c], (DEBUG_BUFFER_SIZE - c), "]\r\n");
+        uart_0_send(debug_buffer, c);
+        osSemaphoreRelease(debug_lock_id);
+    }
 }
 
 void debug_send_blocking(uint8_t *data, uint32_t size)

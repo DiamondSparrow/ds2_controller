@@ -57,11 +57,18 @@ const uint32_t RTCOscRateIn = 32768;
 /* Set up and initialize hardware prior to call to main */
 void SystemInit(void)
 {
+    /* Enable SWM and IOCON clocks */
+    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_IOCON);
+    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
+    Chip_SYSCTL_PeriphReset(RESET_IOCON);
 #if defined(NO_BOARD_LIB)
-	/* Chip specific SystemInit */
-	Chip_SystemInit();
+    /* Chip specific SystemInit */
+    Chip_SystemInit();
 #else
-	/* Board specific SystemInit */
-	Board_SystemInit();
+    /* Board specific SystemInit */
+    Board_SystemInit();
 #endif
+
+    /* Set SYSTICKDIV to 1 so CMSIS Systick functions work */
+    LPC_SYSCTL->SYSTICKCLKDIV = 1;
 }

@@ -21,8 +21,7 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
-
-#include "debug.h"
+#include <string.h>
 
 #include "nrf24l01.h"
 #include "periph/spi.h"
@@ -221,7 +220,7 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
     nrf24l01_config.channel         = !channel; // Set channel to some different value for nrf24l01_set_channel() function
     nrf24l01_config.payload_size    = payload_size;
     nrf24l01_config.tx_power        = NRF24L01_TX_POWER_0DBM;
-    nrf24l01_config.data_rate       = NRF24L01_DATA_RATE_250K;
+    nrf24l01_config.data_rate       = NRF24L01_DATA_RATE_1M;
     
     /* Reset nRF24L01+ to power on registers values */
     nrf24l01_software_reset();
@@ -271,16 +270,9 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
 
 void nrf24l01_set_my_address(uint8_t *addr)
 {
-    uint8_t data[5] = {0};
     NRF24L01_CE_LOW;
     nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, 5);
     NRF24L01_CE_HIGH;
-    
-    NRF24L01_CE_LOW;
-    nrf24l01_read_register_multi(NRF24L01_REG_RX_ADDR_P1, data, 5);
-    NRF24L01_CE_HIGH;
-    
-    DEBUG("ADDR: %02X,%02X,%02X,%02X,%02X", data[0], data[1], data[2], data[3], data[4]);
 
     return;
 }
@@ -335,7 +327,7 @@ nrf24l01_tx_status_t nrf24l01_get_tx_status(void)
 {
     uint8_t status = nrf24l01_get_status();
 
-    DEBUG("Status: %02X", status);
+    //DEBUG("Status: %02X", status);
     
     if((status & (1 << NRF24L01_TX_DS)))
     {
@@ -355,7 +347,11 @@ nrf24l01_tx_status_t nrf24l01_get_tx_status(void)
 void nrf24l01_transmit(uint8_t *data)
 {
     uint8_t count = nrf24l01_config.payload_size;
+    uint8_t buffer[33] = {0};
 
+    buffer[0] = NRF24L01_W_TX_PAYLOAD_MASK;
+    memcpy(&buffer[1], data, count);
+    
     /* Chip enable put to low, disable it */
     NRF24L01_CE_LOW;
 
@@ -368,9 +364,9 @@ void nrf24l01_transmit(uint8_t *data)
     /* Send payload to nRF24L01+ */
     NRF24L01_CSN_LOW;
     /* Send write payload command */
-    spi_0_write_buffer((uint8_t []){NRF24L01_W_TX_PAYLOAD_MASK}, 1);
+    //spi_0_write_buffer((uint8_t []){NRF24L01_W_TX_PAYLOAD_MASK}, 1);
     /* Fill payload with data*/
-    spi_0_write_buffer(data, count);
+    spi_0_write_buffer(buffer, count + 1);
     /* Disable SPI */
     NRF24L01_CSN_HIGH;
 
@@ -384,11 +380,6 @@ uint8_t nrf24l01_data_ready(void)
 {
     uint8_t status = nrf24l01_get_status();
 
-    if(status != 0x0E)
-    {
-        DEBUG("Status: %02X", status);
-    }
-    
     if((status & (1 << NRF24L01_RX_DR)))
     {
         return 1;
@@ -493,7 +484,7 @@ void nrf24l01_init_io(void)
 uint8_t nrf24l01_read_register(uint8_t reg)
 {
     uint8_t tx[1] = {0};
-    uint8_t rx[2] = {0, 0};
+    uint8_t rx[3] = {0, 0};
     tx[0] = NRF24L01_READ_REGISTER_MASK(reg);
     NRF24L01_CSN_LOW;
     spi_0_write_read((uint8_t *)tx, 1, (uint8_t *)rx, 1);
@@ -575,21 +566,12 @@ void nrf24l01_write_bit(uint8_t reg, uint8_t bit, uint8_t value)
 
 void nrf24l01_software_reset(void)
 {
-    uint8_t reg ;
     uint8_t data[5] = {0};
 
     nrf24l01_write_register(NRF24L01_REG_CONFIG,        NRF24L01_REG_DEFAULT_VAL_CONFIG);
-    reg = nrf24l01_read_register(NRF24L01_REG_CONFIG);
-    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_CONFIG, reg, NRF24L01_REG_DEFAULT_VAL_CONFIG);
     nrf24l01_write_register(NRF24L01_REG_EN_AA,         NRF24L01_REG_DEFAULT_VAL_EN_AA);
-    reg = nrf24l01_read_register(NRF24L01_REG_EN_AA);
-    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_EN_AA, reg, NRF24L01_REG_DEFAULT_VAL_EN_AA);
     nrf24l01_write_register(NRF24L01_REG_EN_RXADDR,     NRF24L01_REG_DEFAULT_VAL_EN_RXADDR);
-    reg = nrf24l01_read_register(NRF24L01_REG_EN_RXADDR);
-    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_EN_RXADDR, reg, NRF24L01_REG_DEFAULT_VAL_EN_RXADDR);
     nrf24l01_write_register(NRF24L01_REG_SETUP_AW,      NRF24L01_REG_DEFAULT_VAL_SETUP_AW);
-    reg = nrf24l01_read_register(NRF24L01_REG_SETUP_AW);
-    DEBUG("R%02X = %02X / %02X", NRF24L01_REG_SETUP_AW, reg, NRF24L01_REG_DEFAULT_VAL_SETUP_AW);
     nrf24l01_write_register(NRF24L01_REG_SETUP_RETR,    NRF24L01_REG_DEFAULT_VAL_SETUP_RETR);
     nrf24l01_write_register(NRF24L01_REG_RF_CH,         NRF24L01_REG_DEFAULT_VAL_RF_CH);
     nrf24l01_write_register(NRF24L01_REG_RF_SETUP,      NRF24L01_REG_DEFAULT_VAL_RF_SETUP);

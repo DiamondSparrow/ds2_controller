@@ -60,18 +60,13 @@
  *********************************************************************************************************************/
 void bsp_init(void)
 {
-    /* Enable SWM and IOCON clocks */
-    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_IOCON);
-    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
-    Chip_SYSCTL_PeriphReset(RESET_IOCON);
-
     gpio_init();
     //adc_init();
     //i2c_init();
-    uart_0_init();
     //pwm_init();
     //rtc_init();
     spi_0_init();
+    uart_0_init();
 
     return;
 }

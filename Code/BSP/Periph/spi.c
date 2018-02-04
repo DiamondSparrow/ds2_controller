@@ -82,7 +82,7 @@ void spi_0_init(void)
      */
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 16, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_PULLUP | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     //Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
     Chip_SWM_MovablePortPinAssign(SWM_SPI0_SCK_IO, 0, 0);  // P0.27
@@ -97,10 +97,10 @@ void spi_0_init(void)
     Chip_SPI_Init(LPC_SPI0);
 
     // Set SPI Config register.
-    spi_cfg.ClkDiv      = 17;                    // Set Clock divider to maximum
-    spi_cfg.Mode        = SPI_MODE_MASTER;      // Enable Master Mode
-    spi_cfg.ClockMode   = SPI_CLOCK_MODE0;      // Enable Mode 0
-    spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;   // Transmit MSB first
+    spi_cfg.ClkDiv      = Chip_SPI_CalClkRateDivider(LPC_SPI0, 1000000);    // Set Clock divider to maximum
+    spi_cfg.Mode        = SPI_MODE_MASTER;                                  // Enable Master Mode
+    spi_cfg.ClockMode   = SPI_CLOCK_MODE0;                                  // Enable Mode 0
+    spi_cfg.DataOrder   = SPI_DATA_MSB_FIRST;                               // Transmit MSB first
     // Slave select polarity is active low.
     spi_cfg.SSELPol     = (SPI_CFG_SPOL0_LO | SPI_CFG_SPOL1_LO | SPI_CFG_SPOL2_LO | SPI_CFG_SPOL3_LO);
     Chip_SPI_SetConfig(LPC_SPI0, &spi_cfg);
@@ -114,6 +114,8 @@ void spi_0_init(void)
 
     // Enable SPI0.
     Chip_SPI_Enable(LPC_SPI0);
+    
+    NVIC_DisableIRQ(SPI0_IRQn);
 
     return;
 }
@@ -121,8 +123,6 @@ void spi_0_init(void)
 void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
 {
     uint16_t i = 0;
-    uint16_t j = 0;
-    uint8_t shift = 0;
     
     if(size > SPI_0_BUFFER_SIZE)
     {
@@ -138,12 +138,11 @@ void spi_0_read_buffer(uint8_t *buffer, uint16_t size)
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    uint32_t ret = Chip_SPI_ReadFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    Chip_SPI_ReadFrames_Blocking(LPC_SPI0, (SPI_DATA_SETUP_T *)&spi_0_xfer);
 
     for(i = 0; i < size; i++)
     {
-        buffer[i] = (uint8_t)((spi_0_rx_buffer[j] >> shift) & 0xFF);
-        shift = shift == 8 ? 0 : 8 & j++;
+        buffer[i] = (uint8_t)(spi_0_rx_buffer[i] & 0xFF);
     }
 
     return;
@@ -172,7 +171,7 @@ void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    uint32_t ret = Chip_SPI_WriteFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    Chip_SPI_WriteFrames_Blocking(LPC_SPI0, (SPI_DATA_SETUP_T *)&spi_0_xfer);
 
     return;
 }
@@ -180,8 +179,6 @@ void spi_0_write_buffer(uint8_t *buffer, uint16_t size)
 void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_size)
 {
     uint16_t i = 0;
-    uint16_t j = 0;
-    uint8_t shift = 0;
     
     if((tx_size + rx_size) > SPI_0_BUFFER_SIZE)
     {
@@ -209,12 +206,11 @@ void spi_0_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
     spi_0_xfer.TxCnt = 0;
     spi_0_xfer.RxCnt = 0;
 
-    uint32_t ret = Chip_SPI_RWFrames_Blocking(LPC_SPI0, &spi_0_xfer);
+    Chip_SPI_RWFrames_Blocking(LPC_SPI0, (SPI_DATA_SETUP_T *)&spi_0_xfer);
 
     for(i = 0; i < (rx_size + tx_size); i++)
     {
-        rx[i] = (uint8_t)((spi_0_rx_buffer[j] >> shift) & 0xFF);
-        shift = shift == 8 ? 0 : 8 & j++;
+        rx[i] = (uint8_t)(spi_0_rx_buffer[i] & 0xFF);
     }
 
     return;
@@ -287,7 +283,7 @@ void spi_1_read_buffer(uint8_t *buffer, uint16_t size)
     spi_1_xfer.TxCnt = 0;
     spi_1_xfer.RxCnt = 0;
 
-    Chip_SPI_RWFrames_Blocking(LPC_SPI1, &spi_1_xfer);
+    Chip_SPI_RWFrames_Blocking(LPC_SPI1, (SPI_DATA_SETUP_T *)&spi_1_xfer);
 
     for(i = 1; i < (size + 1) && i < SPI_1_RX_BUFFER_SIZE; i++)
     {
@@ -323,7 +319,7 @@ void spi_1_write_buffer(uint8_t *buffer, uint16_t size)
     spi_1_xfer.TxCnt = 0;
     spi_1_xfer.RxCnt = 0;
 
-    Chip_SPI_WriteFrames_Blocking(LPC_SPI1, &spi_1_xfer);
+    Chip_SPI_WriteFrames_Blocking(LPC_SPI1, (SPI_DATA_SETUP_T *)&spi_1_xfer);
 
     return;
 }
@@ -347,7 +343,7 @@ void spi_1_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_si
     spi_1_xfer.TxCnt = 0;
     spi_1_xfer.RxCnt = 0;
 
-    Chip_SPI_RWFrames_Blocking(LPC_SPI1, &spi_1_xfer);
+    Chip_SPI_RWFrames_Blocking(LPC_SPI1, (SPI_DATA_SETUP_T *)&spi_1_xfer);
 
     for(i = 1; i < (rx_size + 1) && i < SPI_1_RX_BUFFER_SIZE; i++)
     {
