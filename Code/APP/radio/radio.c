@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file         sensors.c
+ * @file         radio.c
  * @author       Diamond Sparrow
  * @version      1.0.0.0
- * @date         2016-09-01
- * @brief        This is C source file template.
+ * @date         2018-02-06
+ * @brief        Radio C source file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -22,31 +22,33 @@
  *********************************************************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
-#include "sensors/sensors.h"
+#include "radio/radio.h"
+#include "radio/nrf24l01.h"
 
-#include "sensors/bh1750.h"
-#include "sensors/am2301.h"
-#include "sensors/dht11.h"
-#include "sensors/filters.h"
-
-#include "debug.h"
 #include "cmsis_os2.h"
+#include "debug.h"
 
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
 /** Sensors thread attributes. */
-const osThreadAttr_t sensors_thread_attr =
+const osThreadAttr_t radio_thread_attr =
 {
-    .name = "SENSORS",
+    .name = "RADIO",
     .stack_size = 1024,
     .priority = osPriorityNormal,
 };
 
+const uint8_t radio_my_address[NRF24L01_ADDRESS_SIZE] = {0xE7, 0xE7, 0xE7, 0xE7, 0xE7};
+const uint8_t radio_peer_address[NRF24L01_ADDRESS_SIZE] = {0xD7, 0xD7, 0xD7, 0xD7, 0xD7};
+
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
+#define RADIO_CHANNEL       1
+#define RADIO_PAYLAOD_SIZE  32
 
 /**********************************************************************************************************************
  * Private typedef
@@ -55,10 +57,8 @@ const osThreadAttr_t sensors_thread_attr =
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/** Sensors thread ID. */
-osThreadId_t sensors_thread_id;
-filters_low_pass_t sensors_light_lp_filter = {0};
-volatile sensors_data_t sensors_data = {0};
+/** Radio thread ID. */
+osThreadId_t radio_thread_id;
 
 /**********************************************************************************************************************
  * Exported variables
@@ -71,13 +71,10 @@ volatile sensors_data_t sensors_data = {0};
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-bool sensors_init(void)
+bool radio_init(void)
 {
-    sensors_data.light.state = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
-    dht11_init();
-
     // Create sensors thread.
-    if((sensors_thread_id = osThreadNew(&sensors_thread, NULL, &sensors_thread_attr)) == NULL)
+    if((radio_thread_id = osThreadNew(&radio_thread, NULL, &radio_thread_attr)) == NULL)
     {
         // Failed to create a thread.
         return false;
@@ -86,53 +83,57 @@ bool sensors_init(void)
     return true;
 }
 
-void sensors_thread(void *arguments)
+void radio_thread(void *arguments)
 {
-    dht11_data_t dht11_data = {0};
-    uint16_t light = 0;
+    uint8_t data[RADIO_PAYLAOD_SIZE] = {0};
+    uint8_t count = 0;
+    nrf24l01_tx_status_t status = NRF24L01_TX_STATUS_LOST;
 
-    osDelay(10);
+    nrf24l01_init(RADIO_CHANNEL, RADIO_PAYLAOD_SIZE);
+    nrf24l01_set_my_address((uint8_t *)radio_my_address);
+    nrf24l01_set_tx_address((uint8_t *)radio_peer_address);
 
     while(1)
     {
-        if(sensors_data.light.state)
+        if(nrf24l01_data_ready())
         {
-            light = bh1750_read_level();
-            if(light != UINT16_MAX)
+            nrf24l01_get_data(data);
+            DEBUG_RADIO("Received data:");
+            debug_send_hex_os(data, RADIO_PAYLAOD_SIZE);
+            // TODO: command parser
+            // TODO: form response
+            data[0]++;
+            nrf24l01_transmit(data);
+            while(1)
             {
-                sensors_data.light.value = light;
-                sensors_data.light.value_lp = (uint16_t)filter_low_pass(&sensors_light_lp_filter, (double)light, 0.25);
+                osDelay(1);
+                status = nrf24l01_get_tx_status();
+                if(status != NRF24L01_TX_STATUS_SENDING)
+                {
+                    break;
+                }
             }
-            else
+            switch(status)
             {
-                sensors_data.light.state = false;
+                case NRF24L01_TX_STATUS_OK:
+                    count = nrf24l01_get_retransmissions_count();
+                    DEBUG_RADIO("Transmit: OK (0x%02X, %d).", status, count);
+                    break;
+                case NRF24L01_TX_STATUS_LOST:
+                    count = nrf24l01_get_retransmissions_count();
+                    DEBUG_RADIO("Transmit: LOST (0x%02X, %d).", status, count);
+                    break;
+                case NRF24L01_TX_STATUS_SENDING:
+                    DEBUG_RADIO("Transmit: SENDING (0x%02X).", status);
+                    break;
+                default:
+                    DEBUG_RADIO("Transmit: ERROR (0x%02X).", status);
+                    break;
             }
-        }
-        else
-        {
-            sensors_data.light.state = bh1750_init(BH1750_MODE_CONT_HIGH_RES);
+            memset(data, 0, sizeof(data));
+            nrf24l01_power_up_rx();
         }
         osDelay(1);
-        if(dht11_read(&dht11_data) == true)
-        {
-            sensors_data.humidity.state = true;
-            sensors_data.humidity.value = dht11_data.humidity;
-            sensors_data.temperature.state = true;
-            sensors_data.temperature.value = dht11_data.temperature;
-        }
-        else
-        {
-            dht11_init();
-            sensors_data.humidity.state = false;
-            sensors_data.temperature.state = false;
-        }
-        /*
-        DEBUG("Sensors data: %d,%d; %d,%d; %d,%d;",
-            sensors_data.light.state, sensors_data.light.value,
-            sensors_data.humidity.state, sensors_data.humidity.value,
-            sensors_data.temperature.state, sensors_data.temperature.value);
-        */
-        osDelay(100);
     }
 }
 

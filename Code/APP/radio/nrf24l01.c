@@ -271,7 +271,7 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
 void nrf24l01_set_my_address(uint8_t *addr)
 {
     NRF24L01_CE_LOW;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, NRF24L01_ADDRESS_SIZE);
     NRF24L01_CE_HIGH;
 
     return;
@@ -279,8 +279,8 @@ void nrf24l01_set_my_address(uint8_t *addr)
 
 void nrf24l01_set_tx_address(uint8_t *addr)
 {
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, addr, 5);
-    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, addr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, addr, NRF24L01_ADDRESS_SIZE);
+    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, addr, NRF24L01_ADDRESS_SIZE);
 
     return;
 }
@@ -435,7 +435,6 @@ void nrf24l01_set_rf(nrf24l01_data_rate_t data_rate, nrf24l01_tx_power_t tx_powe
         tmp |= 1 << NRF24L01_RF_DR_LOW;
     }
     /* If 1Mbps, all bits set to 0 */
-
     if(tx_power == NRF24L01_TX_POWER_0DBM)
     {
         tmp |= 3 << NRF24L01_RF_PWR;
@@ -484,19 +483,23 @@ void nrf24l01_init_io(void)
 uint8_t nrf24l01_read_register(uint8_t reg)
 {
     uint8_t tx[1] = {0};
-    uint8_t rx[3] = {0, 0};
+    uint8_t rx[1] = {0};
+
     tx[0] = NRF24L01_READ_REGISTER_MASK(reg);
+
     NRF24L01_CSN_LOW;
-    spi_0_write_read((uint8_t *)tx, 1, (uint8_t *)rx, 1);
+    spi_0_write_buffer(tx, 1);
+    spi_0_read_buffer(rx, 1);
     NRF24L01_CSN_HIGH;
 
-    return rx[1];
+    return rx[0];
 }
 
 void nrf24l01_read_register_multi(uint8_t reg, uint8_t *data, uint8_t count)
 {
     NRF24L01_CSN_LOW;
-    spi_0_write_read((uint8_t []){NRF24L01_READ_REGISTER_MASK(reg)}, 1, data, count);
+    spi_0_write_buffer((uint8_t []){NRF24L01_READ_REGISTER_MASK(reg)}, 1);
+    spi_0_read_buffer(data, count);
     NRF24L01_CSN_HIGH;
 
     return;
@@ -566,7 +569,7 @@ void nrf24l01_write_bit(uint8_t reg, uint8_t bit, uint8_t value)
 
 void nrf24l01_software_reset(void)
 {
-    uint8_t data[5] = {0};
+    uint8_t data[NRF24L01_ADDRESS_SIZE] = {0};
 
     nrf24l01_write_register(NRF24L01_REG_CONFIG,        NRF24L01_REG_DEFAULT_VAL_CONFIG);
     nrf24l01_write_register(NRF24L01_REG_EN_AA,         NRF24L01_REG_DEFAULT_VAL_EN_AA);
@@ -585,7 +588,7 @@ void nrf24l01_software_reset(void)
     data[2] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P0_2;
     data[3] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P0_3;
     data[4] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P0_4;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, data, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, data, NRF24L01_ADDRESS_SIZE);
 
     //P1
     data[0] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_0;
@@ -593,7 +596,7 @@ void nrf24l01_software_reset(void)
     data[2] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_2;
     data[3] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_3;
     data[4] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_4;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, data, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, data, NRF24L01_ADDRESS_SIZE);
 
     nrf24l01_write_register(NRF24L01_REG_RX_ADDR_P2,    NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P2);
     nrf24l01_write_register(NRF24L01_REG_RX_ADDR_P3,    NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P3);
@@ -606,7 +609,7 @@ void nrf24l01_software_reset(void)
     data[2] = NRF24L01_REG_DEFAULT_VAL_TX_ADDR_2;
     data[3] = NRF24L01_REG_DEFAULT_VAL_TX_ADDR_3;
     data[4] = NRF24L01_REG_DEFAULT_VAL_TX_ADDR_4;
-    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, data, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, data, NRF24L01_ADDRESS_SIZE);
 
     nrf24l01_write_register(NRF24L01_REG_RX_PW_P0,      NRF24L01_REG_DEFAULT_VAL_RX_PW_P0);
     nrf24l01_write_register(NRF24L01_REG_RX_PW_P1,      NRF24L01_REG_DEFAULT_VAL_RX_PW_P1);

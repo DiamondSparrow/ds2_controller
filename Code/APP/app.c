@@ -41,7 +41,7 @@
 #include "sensors/joystick.h"
 #include "sensors/ultrasonic.h"
 #include "servo/servo.h"
-#include "radio/nrf24l01.h"
+#include "radio/radio.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -158,16 +158,13 @@ void app_error(void)
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
-#define RADIO_MODE  0   // 1 - RX, 0 - TX
 static void app_thread(void *arguments)
 {
     //display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
     uint8_t ret = 0;
-    uint8_t count = 0;
     //uint8_t d = 0;
     //bool sw_left = false;
     //bool sw_right = false;
-    uint8_t data[32] = {0};
 
     debug_init();
     DEBUG_INIT(" * Initializing.");
@@ -189,10 +186,9 @@ static void app_thread(void *arguments)
     //DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
     //ret = display_init();
     //DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
+    ret = radio_init();
+    DEBUG_INIT("%-15.15s %s.", "Radio:", ret == false ? "err" : "ok");
 
-    nrf24l01_init(1, 32);
-    nrf24l01_set_my_address((uint8_t []){0xE7,0xE7,0xE7,0xE7,0xE7});
-    nrf24l01_set_tx_address((uint8_t []){0xD7,0xD7,0xD7,0xD7,0xD7});
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
@@ -209,43 +205,7 @@ static void app_thread(void *arguments)
 
     while(1)
     {
-        if(nrf24l01_data_ready())
-        {
-            nrf24l01_get_data(data);
-            DEBUG("Received data:");
-            debug_send_hex_os(data, 32);
-            data[0]++;
-            nrf24l01_transmit(data);
-            while(1)
-            {
-                osDelay(1);
-                ret = nrf24l01_get_tx_status();
-                if(ret != NRF24L01_TX_STATUS_SENDING)
-                {
-                    break;
-                }
-            }
-            switch(ret)
-            {
-                case NRF24L01_TX_STATUS_OK:
-                    count = nrf24l01_get_retransmissions_count();
-                    DEBUG_INIT("Transmit: OK (0x%02X, %d).", ret, count);
-                    break;
-                case NRF24L01_TX_STATUS_LOST:
-                    count = nrf24l01_get_retransmissions_count();
-                    DEBUG_INIT("Transmit: LOST (0x%02X, %d).", ret, count);
-                    break;
-                case NRF24L01_TX_STATUS_SENDING:
-                    DEBUG_INIT("Transmit: SENDING (0x%02X).", ret);
-                    break;
-                default:
-                    DEBUG_INIT("Transmit: ERROR (0x%02X).", ret);
-                    break;
-            }
-            memset(data, 0, sizeof(data));
-            nrf24l01_power_up_rx();
-        }
-        osDelay(1);
+        osDelay(100);
 
         /*
         d = 20;

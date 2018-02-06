@@ -33,6 +33,9 @@
  *********************************************************************************************************************/
 #define SPI_0_BITRATE       1000000 //!< SPI 0 bit rate in Hz.
 #define SPI_0_BUFFER_SIZE   128     //!< SPI 0 transmit and receive buffers size in bytes.
+#define SPI_0_DATA_SIZE     8
+#define SPI_0_SSEL          (SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3)
+
 
 #define SPI_1_BITRATE       1000000 //!< SPI 1 bit rate in Hz.
 #define SPI_1_BUFFER_SIZE   128     //!< SPI 1 transmit and receive buffers size in bytes.
@@ -49,9 +52,9 @@
  * Private variables
  *********************************************************************************************************************/
 /** SPI-0 Transfer Setup */
-static SPI_DATA_SETUP_T spi_0_xfer;
-static uint16_t spi_0_tx_buffer[SPI_0_BUFFER_SIZE] = {0};
-static uint16_t spi_0_rx_buffer[SPI_0_BUFFER_SIZE] = {0};
+//static SPI_DATA_SETUP_T spi_0_xfer;
+//static uint16_t spi_0_tx_buffer[SPI_0_BUFFER_SIZE] = {0};
+//static uint16_t spi_0_rx_buffer[SPI_0_BUFFER_SIZE] = {0};
 /** SPI-1 Transfer Setup */
 static SPI_DATA_SETUP_T spi_1_xfer;
 static uint16_t spi_1_tx_buffer[SPI_1_BUFFER_SIZE] = {0};
@@ -126,10 +129,7 @@ void spi_0_init(void)
     return;
 }
 
-#define SPI_0_DATA_SIZE     8
-#define SPI_0_SSEL          (SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3)
-
-uint16_t spi_0_read_buffer(uint8_t *buffer, uint32_t size)
+uint32_t spi_0_read_buffer(uint8_t *buffer, uint32_t size)
 {
     uint32_t rx_cnt = 0;
 
@@ -138,18 +138,18 @@ uint16_t spi_0_read_buffer(uint8_t *buffer, uint32_t size)
     /* Set control information */
     Chip_SPI_SetControlInfo(LPC_SPI0, SPI_0_DATA_SIZE, SPI_0_SSEL | SPI_TXCTL_EOF);
 
-    while (rx_cnt < size)
+    while(rx_cnt < size)
     {
         /* Wait for TxReady */
         while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_TXRDY)) {}
         /* Send dummy data */
         if(rx_cnt == (size - 1))
         {
-            Chip_SPI_SendLastFrame(LPC_SPI0, 0xFFFF, SPI_0_DATA_SIZE, SPI_TXDATCTL_SSEL_MASK);
+            Chip_SPI_SendLastFrame(LPC_SPI0, 0xFF, SPI_0_DATA_SIZE, SPI_TXDATCTL_SSEL_MASK);
         }
         else
         {
-            Chip_SPI_SendMidFrame(LPC_SPI0, 0xFFFF);
+            Chip_SPI_SendMidFrame(LPC_SPI0, 0xFF);
         }
         /* Wait for receive data */
         while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_RXRDY)) {}
@@ -159,7 +159,7 @@ uint16_t spi_0_read_buffer(uint8_t *buffer, uint32_t size)
     }
 
     /* Check overrun error */
-    if (Chip_SPI_GetStatus(LPC_SPI0) & (SPI_STAT_RXOV | SPI_STAT_TXUR))
+    if(Chip_SPI_GetStatus(LPC_SPI0) & (SPI_STAT_RXOV | SPI_STAT_TXUR))
     {
         return 0;
     }
@@ -198,51 +198,6 @@ uint32_t spi_0_write_buffer(uint8_t *buffer, uint32_t size)
 
     /* Check overrun error */
     if (Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_TXUR)
-    {
-        return 0;
-    }
-
-    return tx_cnt;
-}
-
-uint32_t spi_0_write_read(uint8_t *tx, uint32_t tx_size, uint8_t *rx, uint32_t rx_size)
-{
-    uint32_t tx_cnt = 0;
-    uint32_t rx_cnt = 0;
-    uint32_t status = 0;
-    uint32_t size = tx_size + rx_size;
-
-    /* Clear status */
-    Chip_SPI_ClearStatus(LPC_SPI0, SPI_STAT_CLR_RXOV | SPI_STAT_CLR_TXUR | SPI_STAT_CLR_SSA | SPI_STAT_CLR_SSD | SPI_STAT_FORCE_EOT);
-    /* Set control information. */
-    Chip_SPI_SetControlInfo(LPC_SPI0, SPI_0_DATA_SIZE, SPI_0_SSEL| SPI_TXCTL_EOF);
-
-    while ((tx_cnt < size) || (rx_cnt < size))
-    {
-        status = Chip_SPI_GetStatus(LPC_SPI0);
-        /* In case of TxReady */
-        if ((status & SPI_STAT_TXRDY) && (tx_cnt < size))
-        {
-            if(tx_cnt == (size - 1))
-            {
-                Chip_SPI_SendLastFrame(LPC_SPI0, tx[tx_cnt], SPI_0_DATA_SIZE, SPI_0_SSEL);
-            }
-            else
-            {
-                Chip_SPI_SendMidFrame(LPC_SPI0, tx[tx_cnt]);
-            }
-            tx_cnt++;
-        }
-        /* In case of Rx ready */
-        if ((status & SPI_STAT_RXRDY) && (rx_cnt < size))
-        {
-            rx[rx_cnt] = Chip_SPI_ReceiveFrame(LPC_SPI0);
-            rx_cnt++;
-        }
-    }
-
-    /* Check error */
-    if (Chip_SPI_GetStatus(LPC_SPI0) & (SPI_STAT_RXOV | SPI_STAT_TXUR))
     {
         return 0;
     }
@@ -351,7 +306,7 @@ void spi_1_write_buffer(uint8_t *buffer, uint16_t size)
     spi_1_xfer.pTx = spi_1_tx_buffer;   /* Transmit Buffer */
     spi_1_xfer.pRx = NULL;              /* Receive Buffer */
     spi_1_xfer.DataSize = 8;            /* Data size in bits */
-    spi_1_xfer.Length = size            /* Total frame length */
+    spi_1_xfer.Length = size;           /* Total frame length */
     /* Assert only SSEL0 */
     spi_1_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
     spi_1_xfer.TxCnt = 0;

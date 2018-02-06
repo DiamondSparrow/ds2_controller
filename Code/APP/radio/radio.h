@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        debug.h
+ * @file        radio.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-04-10
- * @brief       This is C header file template.
+ * @date        2018-02-06
+ * @brief       Radio C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef DEBUG_H_
-#define DEBUG_H_
+#ifndef RADIO_H_
+#define RADIO_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,16 +32,10 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define DEBUG_BUFFER_SIZE   255
-#define DEBUG_LOCK_TIMEOUT  1000
 
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-#define DEBUG_BOOT(F, ...)  debug_send(F "\r", ##__VA_ARGS__)
-#define DEBUG_INIT(F, ...)  debug_send_os(F "\r", ##__VA_ARGS__)
-#define DEBUG(F, ...)       debug_send_os(F "\r", ##__VA_ARGS__)
-#define DEBUG_RADIO(F, ...) debug_send_os("[RADIO] " F "\r", ##__VA_ARGS__)
 
 /**********************************************************************************************************************
  * Exported types
@@ -54,14 +48,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool debug_init(void);
-void debug_send(const char *fmt, ...);
-void debug_send_os(const char *fmt, ...);
-void debug_send_hex_os(uint8_t *buffer, uint16_t size);
-void debug_send_blocking(uint8_t *data, uint32_t size);
+bool radio_init(void);
+void radio_thread(void *arguments);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* DEBUG_H_ */
+#endif /* RADIO_H_ */

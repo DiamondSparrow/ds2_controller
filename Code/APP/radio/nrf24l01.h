@@ -37,6 +37,8 @@ extern "C" {
 #define NRF24L01_IRQ_TX_OK      0x20    //!< Transmission went OK.
 #define NRF24L01_IRQ_MAX_RT     0x10    //!< Max retransmissions reached, last transmission failed.
 
+#define NRF24L01_ADDRESS_SIZE   5       //!< Address size in bytes.
+
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
