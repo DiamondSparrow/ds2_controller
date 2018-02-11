@@ -196,8 +196,10 @@ static void app_thread(void *arguments)
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
-    //motor_test_ramp(MOTOR_ID_LEFT, 10);
-    //motor_test_ramp(MOTOR_ID_RIGHT, 10);
+    menu_id = DISPLAY_MENU_ID_MOTOR;
+    display_menu_set(menu_id);
+    osDelay(3000);
+    motor_test_all();
 
     while(1)
     {

@@ -315,8 +315,34 @@ void motor_test_ramp(motor_id_t motor, uint8_t ramp)
 {
     motor_ramp_set(ramp);
 
-    motor_test(motor, ramp * 2);
+    motor_test(motor, ramp + 1);
 
+    return;
+}
+
+void motor_test_all(void)
+{
+    const uint8_t speed = 50;
+    const uint16_t delay = 2000;
+    motor_ramp_set(5);
+    motor_forward(MOTOR_ID_LEFT, speed);
+    motor_forward(MOTOR_ID_RIGHT, speed);
+    osDelay(delay);
+    motor_backward(MOTOR_ID_LEFT, speed);
+    motor_backward(MOTOR_ID_RIGHT, speed);
+    osDelay(delay);
+    motor_forward(MOTOR_ID_LEFT, speed);
+    motor_backward(MOTOR_ID_RIGHT, speed);
+    osDelay(delay);
+    motor_backward(MOTOR_ID_LEFT, speed);
+    motor_forward(MOTOR_ID_RIGHT, speed);
+    osDelay(delay);
+    motor_backward(MOTOR_ID_LEFT, 0);
+    motor_forward(MOTOR_ID_RIGHT, 0);
+    osDelay(delay);
+    motor_brake(MOTOR_ID_LEFT);
+    motor_brake(MOTOR_ID_RIGHT);
+    
     return;
 }
 
