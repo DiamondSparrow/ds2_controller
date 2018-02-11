@@ -61,6 +61,7 @@ void SystemInit(void)
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_IOCON);
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
     Chip_SYSCTL_PeriphReset(RESET_IOCON);
+
 #if defined(NO_BOARD_LIB)
     /* Chip specific SystemInit */
     Chip_SystemInit();

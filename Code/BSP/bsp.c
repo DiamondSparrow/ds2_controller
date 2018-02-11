@@ -61,11 +61,12 @@
 void bsp_init(void)
 {
     gpio_init();
-    //adc_init();
-    //i2c_init();
-    //pwm_init();
-    //rtc_init();
+    adc_init();
+    i2c_init();
+    pwm_init();
+    rtc_init();
     spi_0_init();
+    spi_1_init();
     uart_0_init();
 
     return;

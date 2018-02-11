@@ -66,8 +66,6 @@ adc_data_t adc_data[ADC_ID_LAST] =
     {.adc = LPC_ADC0, .ch = 0,   .port = 0xFF,   .pin = 0xFF,    .sw_pin = SWM_FIXED_ADC0_0, .value = 0, {0, 0, 0}},
     {.adc = LPC_ADC0, .ch = 2,   .port = 0,      .pin = 6,       .sw_pin = SWM_FIXED_ADC0_2, .value = 0, {0, 0, 0}},
     {.adc = LPC_ADC0, .ch = 3,   .port = 0,      .pin = 5,       .sw_pin = SWM_FIXED_ADC0_3, .value = 0, {0, 0, 0}},
-    {.adc = LPC_ADC1, .ch = 1,   .port = 0,      .pin = 9,       .sw_pin = SWM_FIXED_ADC1_1 , .value = 0, {0, 0, 0}},
-    {.adc = LPC_ADC1, .ch = 4,   .port = 1,      .pin = 2,       .sw_pin = SWM_FIXED_ADC1_4, .value = 0, {0, 0, 0}},
 };
 
 /**********************************************************************************************************************
@@ -86,7 +84,7 @@ static void adc_1_init(void);
 void adc_init(void)
 {
     adc_0_init();
-    adc_1_init();
+    // adc_1_init();
 
     return;
 }

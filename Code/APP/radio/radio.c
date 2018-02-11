@@ -38,7 +38,7 @@ const osThreadAttr_t radio_thread_attr =
 {
     .name = "RADIO",
     .stack_size = 1024,
-    .priority = osPriorityNormal,
+    .priority = osPriorityAboveNormal,
 };
 
 const uint8_t radio_my_address[NRF24L01_ADDRESS_SIZE] = {0xE7, 0xE7, 0xE7, 0xE7, 0xE7};
@@ -93,6 +93,8 @@ void radio_thread(void *arguments)
     nrf24l01_set_my_address((uint8_t *)radio_my_address);
     nrf24l01_set_tx_address((uint8_t *)radio_peer_address);
 
+    nrf24l01_power_up_rx();
+
     while(1)
     {
         if(nrf24l01_data_ready())
@@ -133,7 +135,7 @@ void radio_thread(void *arguments)
             memset(data, 0, sizeof(data));
             nrf24l01_power_up_rx();
         }
-        osDelay(1);
+        osDelay(10);
     }
 }
 

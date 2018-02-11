@@ -37,7 +37,7 @@
 //     <i> Defines the combined global dynamic memory size.
 //     <i> Default: 4096
 #ifndef OS_DYNAMIC_MEM_SIZE
-#define OS_DYNAMIC_MEM_SIZE         4096
+#define OS_DYNAMIC_MEM_SIZE         8192
 #endif
  
 //   <o>Kernel Tick Frequency [Hz] <1-1000000>
@@ -127,7 +127,7 @@
 //   <i> RTOS Functions called from ISR store requests to this buffer.
 //   <i> Default: 16 entries
 #ifndef OS_ISR_FIFO_QUEUE
-#define OS_ISR_FIFO_QUEUE           16
+#define OS_ISR_FIFO_QUEUE           32
 #endif
  
 // </h>

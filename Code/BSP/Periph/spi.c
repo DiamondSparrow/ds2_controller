@@ -31,13 +31,13 @@
 /**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
-#define SPI_0_BITRATE       1000000 //!< SPI 0 bit rate in Hz.
+#define SPI_0_BITRATE       8000000 //!< SPI 0 bit rate in Hz.
 #define SPI_0_BUFFER_SIZE   128     //!< SPI 0 transmit and receive buffers size in bytes.
 #define SPI_0_DATA_SIZE     8
 #define SPI_0_SSEL          (SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3)
 
 
-#define SPI_1_BITRATE       1000000 //!< SPI 1 bit rate in Hz.
+#define SPI_1_BITRATE       8000000 //!< SPI 1 bit rate in Hz.
 #define SPI_1_BUFFER_SIZE   128     //!< SPI 1 transmit and receive buffers size in bytes.
 
 /**********************************************************************************************************************
@@ -78,22 +78,17 @@ void spi_0_init(void)
 
     // Enable the clock to the Switch Matrix.
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
-    /*
-     * Initialize SPI0 pins connect
-     * SCK0: PINASSIGN3[15:8]: Select P0.27
-     * MOSI0: PINASSIGN3[23:16]: Select P0.28
-     * MISO0: PINASSIGN3[31:24] : Select P0.12
-     * SSEL0: PINASSIGN4[7:0]: Select P0.29
-     */
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 0, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 16, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 10, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-//  Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
-    Chip_SWM_MovablePortPinAssign(SWM_SPI0_SCK_IO, 0, 0);       // SCK pin P0.27
-    Chip_SWM_MovablePortPinAssign(SWM_SPI0_MOSI_IO, 0, 16);     // MOSI pin P0.28
-    Chip_SWM_MovablePortPinAssign(SWM_SPI0_MISO_IO, 0, 10);     // MISO pin P0.12
-//  Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 0, 9);  // SELECT pin P0.29
+    // Initialize SPI0 pins connect:
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 10, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 4, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 9, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+//  Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 5,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_SCK_IO, 1, 10);      // SCK pin P0.10
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_MOSI_IO, 0, 4);      // MOSI pin P0.4
+    Chip_SWM_MovablePortPinAssign(SWM_SPI0_MISO_IO, 0, 9);      // MISO pin P0.9
+//  Chip_SWM_MovablePortPinAssign(SWM_SPI0_SSELSN_0_IO, 0, 5);  // SELECT pin P0.29
 
     // Disable the clock to the Switch Matrix to save power .
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
@@ -212,22 +207,17 @@ void spi_1_init(void)
 
     // Enable the clock to the Switch Matrix.
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
-    /*
-     * Initialize SPI1 pins connect
-     * SCK0: PINASSIGN3[15:8]: Select P0.27
-     * MOSI0: PINASSIGN3[23:16]: Select P0.28
-     * MISO0: PINASSIGN3[31:24] : Select P0.12
-     * SSEL0: PINASSIGN4[7:0]: Select P0.29
-     */
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 27, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 28, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 12, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-//  Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 29,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
-    Chip_SWM_MovablePinAssign(SWM_SPI1_SCK_IO, 27);      // SCK pin P0.27
-    Chip_SWM_MovablePinAssign(SWM_SPI1_MOSI_IO, 28);     // MOSI pin P0.28
-    Chip_SWM_MovablePinAssign(SWM_SPI1_MISO_IO, 12);     // MISO pin P0.12
-//  Chip_SWM_MovablePinAssign(SWM_SPI0_SSELSN_0_IO, 29); // SELECT pin P0.29
+    // Initialize SPI1 pins connect:
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 29, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+    Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 12, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+//    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 9, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+//  Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 8,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+
+    Chip_SWM_MovablePortPinAssign(SWM_SPI1_SCK_IO, 0, 29);      // SCK pin P0.27
+    Chip_SWM_MovablePortPinAssign(SWM_SPI1_MOSI_IO, 0, 12);     // MOSI pin P0.12
+//    Chip_SWM_MovablePortPinAssign(SWM_SPI1_MISO_IO, 1, 9);      // MISO pin P1.9
+//  Chip_SWM_MovablePortPinAssign(SWM_SPI1_SSELSN_0_IO, 1, 8);  // SELECT pin P1.8
 
     // Disable the clock to the Switch Matrix to save power .
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);

@@ -50,7 +50,7 @@
 const osThreadAttr_t app_thread_attr =
 {
     .name = "APP",
-    .stack_size = 1024,
+    .stack_size = 2048,
     .priority = osPriorityNormal,
 };
 
@@ -160,17 +160,18 @@ void app_error(void)
  *********************************************************************************************************************/
 static void app_thread(void *arguments)
 {
-    //display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
+    display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
     uint8_t ret = 0;
-    //uint8_t d = 0;
-    //bool sw_left = false;
-    //bool sw_right = false;
+    uint8_t d = 0;
+    uint8_t c = 0;
+    bool sw_left = false;
+    bool sw_right = false;
 
     debug_init();
     DEBUG_INIT(" * Initializing.");
+
     indication_set_blocking(INDICATION_INIT);
     indication_init();
-
     DEBUG_INIT("%-15.15s ok.", "Indication:");
     cli_app_init();
     DEBUG_INIT("%-15.15s ok.", "CLI APP:");
@@ -182,32 +183,24 @@ static void app_thread(void *arguments)
     //DEBUG_INIT("%-15.15s %s.", "Joystick:", ret == false ? "err" : "ok");
     //ret = sensors_init();
     //DEBUG_INIT("%-15.15s %s.", "Sensors:", ret == false ? "err" : "ok");
-    //ret = motor_init();
-    //DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
-    //ret = display_init();
-    //DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
     ret = radio_init();
     DEBUG_INIT("%-15.15s %s.", "Radio:", ret == false ? "err" : "ok");
+    ret = motor_init();
+    DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
+    ret = display_init();
+    DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
 
+    rtc_get_from_build();
 
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
-    
-    rtc_get_from_build();
 
-    osDelay(1000);
-
-    //menu_id = DISPLAY_MENU_ID_CLOCK;
-    //display_menu_set(menu_id);
     //motor_test_ramp(MOTOR_ID_LEFT, 10);
     //motor_test_ramp(MOTOR_ID_RIGHT, 10);
 
     while(1)
     {
-        osDelay(100);
-
-        /*
         d = 20;
         c = 0;
         while(d--)
@@ -222,6 +215,7 @@ static void app_thread(void *arguments)
         {
             if(sw_left == false)
             {
+                DEBUG("SW LEFT.");
                 menu_id--;
                 if(menu_id == 0)
                 {
@@ -250,6 +244,7 @@ static void app_thread(void *arguments)
         {
             if(sw_right == false)
             {
+                DEBUG("SW RIGHT.");
                 menu_id++;
                 if(menu_id == DISPLAY_MENU_ID_LAST)
                 {
@@ -263,7 +258,7 @@ static void app_thread(void *arguments)
         {
             sw_right = false;
         }
-        */
+        osDelay(10);
     }
 }
 

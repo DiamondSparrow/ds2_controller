@@ -149,10 +149,10 @@
  * Private definitions and macros
  *********************************************************************************************************************/
 /** Pins configuration */
-#define NRF24L01_CE_LOW             gpio_output_low(GPIO_DISPLAY_DC)
-#define NRF24L01_CE_HIGH            gpio_output_high(GPIO_DISPLAY_DC)
-#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_DISPLAY_SELECT)
-#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_DISPLAY_SELECT)
+#define NRF24L01_CE_LOW             gpio_output_low(GPIO_NRF214L01_CE)
+#define NRF24L01_CE_HIGH            gpio_output_high(GPIO_NRF214L01_CE)
+#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_NRF214L01_CSN)
+#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_NRF214L01_CSN)
 
 /** Clear interrupt flags */
 #define NRF24L01_CLEAR_INTERRUPTS   do { nrf24l01_write_register(NRF24L01_REG_STATUS, 0x70); } while (0)

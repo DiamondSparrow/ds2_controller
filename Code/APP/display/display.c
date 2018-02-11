@@ -95,8 +95,8 @@ static void display_meniu_cb_clock(display_menu_id_t id);
 static void display_meniu_cb_light(display_menu_id_t id);
 static void display_meniu_cb_temperature(display_menu_id_t id);
 static void display_meniu_cb_humidity(display_menu_id_t id);
-#endif // DISPLAY_EXTRA
 static void display_meniu_cb_joystick(display_menu_id_t id);
+#endif // DISPLAY_EXTRA
 static void display_meniu_cb_motor(display_menu_id_t id);
 static void display_meniu_cb_info(display_menu_id_t id);
 
@@ -108,19 +108,14 @@ static void display_contrast_control(void);
  *********************************************************************************************************************/
 bool display_init(void)
 {
-    if(ssd1306_init() == false)
-    {
-        return false;
-    }
-    
     display_menu_init(DISPLAY_MENU_ID_WELCOME, 0, display_meniu_cb_welcome);
     display_menu_init(DISPLAY_MENU_ID_CLOCK, 1000, display_meniu_cb_clock);
 #if DISPLAY_EXTRA
     display_menu_init(DISPLAY_MENU_ID_LIGHT, 100, display_meniu_cb_light);
     display_menu_init(DISPLAY_MENU_ID_TEMPERATURE, 100, display_meniu_cb_temperature);
     display_menu_init(DISPLAY_MENU_ID_HUMIDITY, 100, display_meniu_cb_humidity);
-#endif // DISPLAY_EXTRA
     display_menu_init(DISPLAY_MENU_ID_JOYSTICK, 50, display_meniu_cb_joystick);
+#endif // DISPLAY_EXTRA
     display_menu_init(DISPLAY_MENU_ID_MOTOR, 50, display_meniu_cb_motor);
     display_menu_init(DISPLAY_MENU_ID_INFO, 1000, display_meniu_cb_info);
 
@@ -140,7 +135,9 @@ void display_thread(void *arguments)
 {
     display_menu_id_t id = DISPLAY_MENU_ID_WELCOME;
 
-    osDelay(500);
+    ssd1306_init();
+
+    osDelay(10);
     ssd1306_update_screen();
     osDelay(10);
 
@@ -190,10 +187,12 @@ void display_menu_set(display_menu_id_t id)
  *********************************************************************************************************************/
 static void display_menu_init(display_menu_id_t id, uint32_t period, display_cb_t cb)
 {
+    __disable_irq();
     display_menus[id].period = period;
     display_menus[id].cb = cb;
     display_menus[id].enable = false;
     display_menus[id].init = false;
+    __enable_irq();
 
     return;
 }
@@ -242,7 +241,7 @@ static void display_meniu_cb_clock(display_menu_id_t id)
 
     ConvertRtcTime(timestamp, &clock);
 
-    display_menu_header(id, "Clock");
+    display_menu_header(id, (uint8_t *)"Clock");
 
     ssd1306_goto_xy(20, 23);
     snprintf((char *)tmp, sizeof(tmp), "%02d:%02d:%02d", clock.tm_hour, clock.tm_min, clock.tm_sec);
@@ -341,7 +340,6 @@ static void display_meniu_cb_humidity(display_menu_id_t id)
 
     return;
 }
-#endif // DISPLAY_EXTRA
 
 static void display_meniu_cb_joystick(display_menu_id_t id)
 {
@@ -349,7 +347,7 @@ static void display_meniu_cb_joystick(display_menu_id_t id)
     int32_t magn = 0;
     int32_t dir = 0;
 
-    display_menu_header(id, "Joystick");
+    display_menu_header(id, (uint8_t *)"Joystick");
 
     snprintf((char *)tmp, 18, "X:  %d       ", joystick_get_x(JOYSTICK_ID_1));
     ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_1);
@@ -372,12 +370,13 @@ static void display_meniu_cb_joystick(display_menu_id_t id)
 
     return;
 }
+#endif // DISPLAY_EXTRA
 
 static void display_meniu_cb_motor(display_menu_id_t id)
 {
     uint8_t tmp[18] = {0};
 
-    display_menu_header(id, "Motor");
+    display_menu_header(id, (uint8_t *)"Motor");
 
     snprintf((char *)tmp, 18, "L.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_LEFT), motor_get_speed_target(MOTOR_ID_LEFT));
     ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_1);
@@ -404,13 +403,13 @@ static void display_meniu_cb_info(display_menu_id_t id)
 {
     uint8_t tmp[18] = {0};
 
-    display_menu_header(id, "Info");
+    display_menu_header(id, (uint8_t *)"Info");
 
     snprintf((char *)tmp, 18, "Ver: 1.1-a1");
     ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_1);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, 18, "Clk: %ld MHz.", SystemCoreClock / 1000000);
+    snprintf((char *)tmp, 18, "Clk: %d MHz.", (uint32_t)(SystemCoreClock / 1000000));
     ssd1306_goto_xy(DISPLAY_LINE_X, DISPLAY_LINE_Y_2);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
@@ -427,6 +426,12 @@ static void display_delay(display_menu_id_t id)
 {
     static uint32_t c = 0;
     uint32_t delay = display_menus[id].period;
+
+    if(!delay)
+    {
+        osDelay(10);
+        return;
+    }
 
     while(delay--)
     {

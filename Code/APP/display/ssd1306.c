@@ -681,7 +681,7 @@ static void ssd1306_write_cmd(uint8_t command)
     gpio_output_high(GPIO_DISPLAY_SELECT);
     gpio_output_low(GPIO_DISPLAY_DC);
     gpio_output_low(GPIO_DISPLAY_SELECT);
-    spi_0_write_buffer(&command, 1);
+    spi_1_write_buffer(&command, 1);
     gpio_output_high(GPIO_DISPLAY_SELECT);
 #endif
 
@@ -696,7 +696,7 @@ static void ssd1306_write_data(uint8_t *data, uint16_t size)
     gpio_output_high(GPIO_DISPLAY_SELECT);
     gpio_output_high(GPIO_DISPLAY_DC);
     gpio_output_low(GPIO_DISPLAY_SELECT);
-    spi_0_write_buffer(data, size);
+    spi_1_write_buffer(data, size);
     gpio_output_high(GPIO_DISPLAY_SELECT);
 #endif
 
