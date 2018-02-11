@@ -35,6 +35,8 @@
 #define ADC_TEMP_SENSOR_LLS_SLOPE   (-2.29) //!< Temperature sensor Linear-Least-Square slope (mV/degC).
 #define ADC_TEMP_SENSOR_LLS_0       (577.3) //!< Temperature sensor Linear-Least-Square slope LLS intercept at 0 degC.
 
+#define ADC_1_ENABLE                0
+
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
@@ -76,7 +78,9 @@ adc_data_t adc_data[ADC_ID_LAST] =
  * Prototypes of local functions
  *********************************************************************************************************************/
 static void adc_0_init(void);
+#if ADC_1_ENABLE
 static void adc_1_init(void);
+#endif
 
 /**********************************************************************************************************************
  * Exported functions
@@ -84,7 +88,9 @@ static void adc_1_init(void);
 void adc_init(void)
 {
     adc_0_init();
-    // adc_1_init();
+#if ADC_1_ENABLE
+    adc_1_init();
+#endif
 
     return;
 }
@@ -235,6 +241,7 @@ void ADC0A_IRQHandler(void)
     return;
 }
 
+#if ADC_1_ENABLE
 static void adc_1_init(void)
 {
     uint8_t i = 0;
@@ -337,3 +344,5 @@ void ADC1A_IRQHandler(void)
 
     return;
 }
+#endif // ADC_1_ENABLE
+

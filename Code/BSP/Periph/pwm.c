@@ -69,23 +69,39 @@ static void pwm_2_init(void);
 static void pwm_0_init(void)
 {
     uint8_t i = 0;
+    uint8_t p = 0;
 
     /* Setup Board specific output pin */
     /* Enable SWM clock before altering SWM */
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
     /* Connect SCT outputs. */
-    for(i = 0; i < 2; i++)
+    for(i = 0; i < PWM_ID_LAST; i++)
     {
+        if(pwm_config[i].sct != LPC_SCT0)
+        {
+            continue;
+        }
         Chip_SWM_MovablePortPinAssign(pwm_config[i].pin_mov, pwm_config[i].port, pwm_config[i].pin);
+        p++;
     }
     /* Disable SWM clock after altering SWM */
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
+    if(!p)
+    {
+        // No PWM-0 pins required.
+        return;
+    }
+
     Chip_SCTPWM_Init(LPC_SCT0);
     Chip_SCTPWM_SetRate(LPC_SCT0, PWM_0_RATE);
 
-    for(i = 0; i < 2; i++)
+    for(i = 0; i < PWM_ID_LAST; i++)
     {
+        if(pwm_config[i].sct != LPC_SCT0)
+        {
+            continue;
+        }
         /* Use SCT0_OUT1 pin */
         Chip_SCTPWM_SetOutPin(pwm_config[i].sct, pwm_config[i].index, i);
         /* Start with 0% duty cycle */
@@ -100,23 +116,39 @@ static void pwm_0_init(void)
 static void pwm_2_init(void)
 {
     uint8_t i = 0;
+    uint8_t p = 0;
 
     /* Setup Board specific output pin */
     /* Enable SWM clock before altering SWM */
     Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
     /* Connect SCT outputs. */
-    for(i = 2; i < 4; i++)
+    for(i = 0; i < PWM_ID_LAST; i++)
     {
+        if(pwm_config[i].sct != LPC_SCT2)
+        {
+            continue;
+        }
         Chip_SWM_MovablePortPinAssign(pwm_config[i].pin_mov, pwm_config[i].port, pwm_config[i].pin);
+        p++;
     }
     /* Disable SWM clock after altering SWM */
     Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
+    if(!p)
+    {
+        // No PWM-2 pins required.
+        return;
+    }
+
     Chip_SCTPWM_Init(LPC_SCT2);
     Chip_SCTPWM_SetRate(LPC_SCT2, PWM_2_RATE);
 
-    for(i = 2; i < 4; i++)
+    for(i = 0; i < PWM_ID_LAST; i++)
     {
+        if(pwm_config[i].sct != LPC_SCT2)
+        {
+            continue;
+        }
         /* Use SCT2_OUTx pin. */
         Chip_SCTPWM_SetOutPin(pwm_config[i].sct, pwm_config[i].index, i - 2);
         /* Start with 0% duty cycle */

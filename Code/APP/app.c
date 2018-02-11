@@ -50,7 +50,7 @@
 const osThreadAttr_t app_thread_attr =
 {
     .name = "APP",
-    .stack_size = 2048,
+    .stack_size = 1024,
     .priority = osPriorityNormal,
 };
 

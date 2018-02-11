@@ -123,7 +123,7 @@ bool motor_init()
         vhn2sp30_init(&motor_data[MOTOR_ID_LEFT].drive);
         vhn2sp30_init(&motor_data[MOTOR_ID_RIGHT].drive);
     }
-    
+
     if((motor_thread_id = osThreadNew(motor_thread, NULL, &motor_thread_attr)) == NULL)
     {
         return false;
@@ -181,7 +181,9 @@ void motor_thread(void *arguments)
 
 void motor_ramp_set(uint16_t ramp)
 {
+    __disable_irq();
     motor_ramp = ramp;
+    __enable_irq();
 
     return;
 }
@@ -192,13 +194,17 @@ void motor_forward(motor_id_t motor, uint8_t speed)
 
     if(motor_ramp == 0)
     {
+        __disable_irq();
         motor_data[motor].speed.target = speed;
         motor_data[motor].speed.current = speed;
+        __enable_irq();
         vhn2sp30_run_cw(&motor_data[motor].drive, speed);
     }
     else
     {
+        __disable_irq();
         motor_data[motor].speed.target = speed;
+        __enable_irq();
     }
 
     return;
@@ -210,13 +216,17 @@ void motor_backward(motor_id_t motor, uint8_t speed)
 
     if(motor_ramp == 0)
     {
+        __disable_irq();
         motor_data[motor].speed.target = speed;
         motor_data[motor].speed.current = speed;
+        __enable_irq();
         vhn2sp30_run_ccw(&motor_data[motor].drive, speed);
     }
     else
     {
+        __disable_irq();
         motor_data[motor].speed.target = speed * (-1);
+        __enable_irq();
     }
 
     return;
@@ -224,8 +234,10 @@ void motor_backward(motor_id_t motor, uint8_t speed)
 
 void motor_brake(motor_id_t motor)
 {
+    __disable_irq();
     motor_data[motor].speed.target = 0;
     motor_data[motor].speed.current = 0;
+    __enable_irq();
     vhn2sp30_brake_vcc(&motor_data[motor].drive);
 
     return;
@@ -233,8 +245,10 @@ void motor_brake(motor_id_t motor)
 
 void motor_neutral(motor_id_t motor)
 {
+    __disable_irq();
     motor_data[motor].speed.target = 0;
     motor_data[motor].speed.current = 0;
+    __enable_irq();
     vhn2sp30_brake_gnd(&motor_data[motor].drive);
 
     return;

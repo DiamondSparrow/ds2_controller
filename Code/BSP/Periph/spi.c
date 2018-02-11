@@ -32,13 +32,15 @@
  * Private constants
  *********************************************************************************************************************/
 #define SPI_0_BITRATE       8000000 //!< SPI 0 bit rate in Hz.
-#define SPI_0_BUFFER_SIZE   128     //!< SPI 0 transmit and receive buffers size in bytes.
+#define SPI_0_DUMMY_BYTE    0xFF    //!< Dummy byte used for receive.
 #define SPI_0_DATA_SIZE     8
 #define SPI_0_SSEL          (SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3)
 
 
 #define SPI_1_BITRATE       8000000 //!< SPI 1 bit rate in Hz.
-#define SPI_1_BUFFER_SIZE   128     //!< SPI 1 transmit and receive buffers size in bytes.
+#define SPI_1_DUMMY_BYTE    0xFF    //!< Dummy byte used for receive.
+#define SPI_1_DATA_SIZE     8
+#define SPI_1_SSEL          (SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3)
 
 /**********************************************************************************************************************
  * Private definitions and macros
@@ -51,14 +53,6 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/** SPI-0 Transfer Setup */
-//static SPI_DATA_SETUP_T spi_0_xfer;
-//static uint16_t spi_0_tx_buffer[SPI_0_BUFFER_SIZE] = {0};
-//static uint16_t spi_0_rx_buffer[SPI_0_BUFFER_SIZE] = {0};
-/** SPI-1 Transfer Setup */
-static SPI_DATA_SETUP_T spi_1_xfer;
-static uint16_t spi_1_tx_buffer[SPI_1_BUFFER_SIZE] = {0};
-static uint16_t spi_1_rx_buffer[SPI_1_BUFFER_SIZE] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -140,11 +134,11 @@ uint32_t spi_0_read_buffer(uint8_t *buffer, uint32_t size)
         /* Send dummy data */
         if(rx_cnt == (size - 1))
         {
-            Chip_SPI_SendLastFrame(LPC_SPI0, 0xFF, SPI_0_DATA_SIZE, SPI_TXDATCTL_SSEL_MASK);
+            Chip_SPI_SendLastFrame(LPC_SPI0, SPI_0_DUMMY_BYTE, SPI_0_DATA_SIZE, SPI_TXDATCTL_SSEL_MASK);
         }
         else
         {
-            Chip_SPI_SendMidFrame(LPC_SPI0, 0xFF);
+            Chip_SPI_SendMidFrame(LPC_SPI0, SPI_0_DUMMY_BYTE);
         }
         /* Wait for receive data */
         while (!(Chip_SPI_GetStatus(LPC_SPI0) & SPI_STAT_RXRDY)) {}
@@ -211,12 +205,12 @@ void spi_1_init(void)
     // Initialize SPI1 pins connect:
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 29, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 12, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
-//    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 9, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
+//  Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 9,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 //  Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 8,  (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
     Chip_SWM_MovablePortPinAssign(SWM_SPI1_SCK_IO, 0, 29);      // SCK pin P0.27
     Chip_SWM_MovablePortPinAssign(SWM_SPI1_MOSI_IO, 0, 12);     // MOSI pin P0.12
-//    Chip_SWM_MovablePortPinAssign(SWM_SPI1_MISO_IO, 1, 9);      // MISO pin P1.9
+//  Chip_SWM_MovablePortPinAssign(SWM_SPI1_MISO_IO, 1, 9);      // MISO pin P1.9
 //  Chip_SWM_MovablePortPinAssign(SWM_SPI1_SSELSN_0_IO, 1, 8);  // SELECT pin P1.8
 
     // Disable the clock to the Switch Matrix to save power .
@@ -251,100 +245,80 @@ void spi_1_init(void)
     return;
 }
 
-void spi_1_read_buffer(uint8_t *buffer, uint16_t size)
+uint32_t spi_1_read_buffer(uint8_t *buffer, uint32_t size)
 {
-    uint16_t i = 0;
+    uint32_t rx_cnt = 0;
 
-    if(size > SPI_1_BUFFER_SIZE)
+    /* Clear status */
+    Chip_SPI_ClearStatus(LPC_SPI1, SPI_STAT_CLR_RXOV | SPI_STAT_CLR_TXUR | SPI_STAT_CLR_SSA | SPI_STAT_CLR_SSD | SPI_STAT_FORCE_EOT);
+    /* Set control information */
+    Chip_SPI_SetControlInfo(LPC_SPI1, SPI_1_DATA_SIZE, SPI_1_SSEL | SPI_TXCTL_EOF);
+
+    while(rx_cnt < size)
     {
-        return;
-    }
-
-    spi_1_xfer.pTx = NULL;              /* Transmit Buffer */
-    spi_1_xfer.pRx = spi_1_rx_buffer;   /* Receive Buffer */
-    spi_1_xfer.DataSize = 8;            /* Data size in bits */
-    spi_1_xfer.Length = size;           /* Total frame length */
-    /* Assert only SSEL0 */
-    spi_1_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
-    spi_1_xfer.TxCnt = 0;
-    spi_1_xfer.RxCnt = 0;
-
-    Chip_SPI_ReadFrames_Blocking(LPC_SPI1, (SPI_DATA_SETUP_T *)&spi_1_xfer);
-
-    for(i = 0; i < size; i++)
-    {
-        buffer[i] = (uint8_t)(spi_1_rx_buffer[i] & 0xFF);
-    }
-
-    return;
-}
-
-void spi_1_write_buffer(uint8_t *buffer, uint16_t size)
-{
-    uint16_t i = 0;
-
-    if(size > SPI_1_BUFFER_SIZE)
-    {
-        return;
-    }
-
-    for(i = 0; i < size; i++)
-    {
-        spi_1_tx_buffer[i] = buffer[i];
-    }
-
-    spi_1_xfer.pTx = spi_1_tx_buffer;   /* Transmit Buffer */
-    spi_1_xfer.pRx = NULL;              /* Receive Buffer */
-    spi_1_xfer.DataSize = 8;            /* Data size in bits */
-    spi_1_xfer.Length = size;           /* Total frame length */
-    /* Assert only SSEL0 */
-    spi_1_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
-    spi_1_xfer.TxCnt = 0;
-    spi_1_xfer.RxCnt = 0;
-
-    Chip_SPI_WriteFrames_Blocking(LPC_SPI1, (SPI_DATA_SETUP_T *)&spi_1_xfer);
-
-    return;
-}
-
-void spi_1_write_read(uint8_t *tx, uint16_t tx_size, uint8_t *rx, uint16_t rx_size)
-{
-    uint16_t i = 0;
-
-    if((tx_size + rx_size) > SPI_1_BUFFER_SIZE)
-    {
-        return;
-    }
-
-    for(i = 0; i < (tx_size + rx_size); i++)
-    {
-        if(i < tx_size)
+        /* Wait for TxReady */
+        while (!(Chip_SPI_GetStatus(LPC_SPI1) & SPI_STAT_TXRDY)) {}
+        /* Send dummy data */
+        if(rx_cnt == (size - 1))
         {
-            spi_1_tx_buffer[i] = tx[i];
+            Chip_SPI_SendLastFrame(LPC_SPI1, SPI_1_DUMMY_BYTE, SPI_1_DATA_SIZE, SPI_TXDATCTL_SSEL_MASK);
         }
         else
         {
-            spi_1_tx_buffer[i] = 0xFFFF;
+            Chip_SPI_SendMidFrame(LPC_SPI1, SPI_1_DUMMY_BYTE);
         }
+        /* Wait for receive data */
+        while (!(Chip_SPI_GetStatus(LPC_SPI1) & SPI_STAT_RXRDY)) {}
+        /* Receive data */
+        buffer[rx_cnt] = Chip_SPI_ReceiveFrame(LPC_SPI1);
+        rx_cnt++;
     }
 
-    spi_1_xfer.pTx = spi_1_tx_buffer;       /* Transmit Buffer */
-    spi_1_xfer.pRx = spi_1_rx_buffer;       /* Receive Buffer */
-    spi_1_xfer.DataSize = 8;                /* Data size in bits */
-    spi_1_xfer.Length = tx_size + rx_size;  /* Total frame length */
-    /* Assert only SSEL0 */
-    spi_1_xfer.ssel = SPI_TXCTL_ASSERT_SSEL0 | SPI_TXCTL_DEASSERT_SSEL1 | SPI_TXCTL_DEASSERT_SSEL2 | SPI_TXCTL_DEASSERT_SSEL3;
-    spi_1_xfer.TxCnt = 0;
-    spi_1_xfer.RxCnt = 0;
-
-    Chip_SPI_RWFrames_Blocking(LPC_SPI1, (SPI_DATA_SETUP_T *)&spi_1_xfer);
-
-    for(i = 0; i < (rx_size + tx_size); i++)
+    /* Check overrun error */
+    if(Chip_SPI_GetStatus(LPC_SPI1) & (SPI_STAT_RXOV | SPI_STAT_TXUR))
     {
-        rx[i] = (uint8_t)(spi_1_rx_buffer[i] & 0xFF);
+        return 0;
     }
 
-    return;
+    return rx_cnt;
+}
+
+uint32_t spi_1_write_buffer(uint8_t *buffer, uint32_t size)
+{
+    uint32_t tx_cnt = 0;
+
+    /* Clear status */
+    Chip_SPI_ClearStatus(LPC_SPI1, SPI_STAT_CLR_RXOV | SPI_STAT_CLR_TXUR | SPI_STAT_CLR_SSA | SPI_STAT_CLR_SSD | SPI_STAT_FORCE_EOT);
+    /* Set control information */
+    Chip_SPI_SetControlInfo(LPC_SPI1, SPI_1_DATA_SIZE, SPI_1_SSEL | SPI_TXCTL_EOF | SPI_TXCTL_RXIGNORE);
+
+    while (tx_cnt < size)
+    {
+        /* Wait for TxReady */
+        while (!(Chip_SPI_GetStatus(LPC_SPI1) & SPI_STAT_TXRDY)) { }
+        /* Send data */
+        if (tx_cnt == (size - 1))
+        {
+            Chip_SPI_SendLastFrame_RxIgnore(LPC_SPI1, (uint16_t)buffer[tx_cnt], SPI_1_DATA_SIZE, SPI_1_SSEL);
+        }
+        else
+        {
+            Chip_SPI_SendMidFrame(LPC_SPI1, (uint16_t)buffer[tx_cnt]);
+        }
+        tx_cnt++;
+    }
+
+    /* Make sure the last frame sent completely */
+    while (!(Chip_SPI_GetStatus(LPC_SPI1) & SPI_STAT_SSD)) {}
+    Chip_SPI_ClearStatus(LPC_SPI1, SPI_STAT_CLR_SSD);
+
+    /* Check overrun error */
+    if (Chip_SPI_GetStatus(LPC_SPI1) & SPI_STAT_TXUR)
+    {
+        return 0;
+    }
+
+    return tx_cnt;
 }
 
 /**
