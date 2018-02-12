@@ -154,6 +154,7 @@ bool display_init(void)
     display_menu_init(DISPLAY_MENU_ID_WELCOME, 0, display_menu_cb_welcome);
     display_menu_init(DISPLAY_MENU_ID_CLOCK, 100, display_menu_cb_clock);
     display_menu_init(DISPLAY_MENU_ID_MOTOR, 100, display_menu_cb_motor);
+    display_menu_init(DISPLAY_MENU_ID_RADIO, 100, display_menu_cb_radio);
     display_menu_init(DISPLAY_MENU_ID_INFO, 1000, display_menu_cb_info);
 
     display_set_menu(DISPLAY_MENU_ID_WELCOME);
@@ -448,7 +449,7 @@ static bool display_wakeup(void)
 #if DISPLAY_FIRST_MENU
     // Always display first menu after wakeup.
     __disable_irq();
-    display_curr_menu_id = (display_menu_id_t)1;
+    //display_curr_menu_id = (display_menu_id_t)1;
     display_menu_list[display_curr_menu_id].enable = true;
     display_menu_list[display_curr_menu_id].init = false;
     __enable_irq();

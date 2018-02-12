@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 #include "radio/radio.h"
 #include "radio/nrf24l01.h"
@@ -59,6 +60,8 @@ const uint8_t radio_peer_address[NRF24L01_ADDRESS_SIZE] = {0xD7, 0xD7, 0xD7, 0xD
  *********************************************************************************************************************/
 /** Radio thread ID. */
 osThreadId_t radio_thread_id;
+/** Radio data structure. */
+volatile radio_data_t radio_data = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -87,6 +90,7 @@ void radio_thread(void *arguments)
 {
     uint8_t data[RADIO_PAYLAOD_SIZE] = {0};
     uint8_t count = 0;
+    uint32_t rtr_cnt = 0;
     nrf24l01_tx_status_t status = NRF24L01_TX_STATUS_LOST;
 
     nrf24l01_init(RADIO_CHANNEL, RADIO_PAYLAOD_SIZE);
@@ -102,6 +106,7 @@ void radio_thread(void *arguments)
             nrf24l01_get_data(data);
             DEBUG_RADIO("Received data:");
             debug_send_hex_os(data, RADIO_PAYLAOD_SIZE);
+            radio_data.rx_counter++;
             // TODO: command parser
             // TODO: form response
             data[0]++;
@@ -115,21 +120,38 @@ void radio_thread(void *arguments)
                     break;
                 }
             }
+            count = nrf24l01_get_retransmissions_count();
+            radio_data.tx_counter++;
+            if(radio_data.tx_counter)
+            {
+                if(count <= 15)
+                {
+                    rtr_cnt += count;
+                    radio_data.retransmisions_count = (uint32_t)((float)rtr_cnt / (float)radio_data.tx_counter);
+                    radio_data.quality = (uint32_t)(100.0 - ((float)radio_data.retransmisions_count * (100.0 / 15.0)));
+                }
+            }
+            else
+            {
+                rtr_cnt = 0;
+                radio_data.tx_counter = 0;
+            }
             switch(status)
             {
                 case NRF24L01_TX_STATUS_OK:
-                    count = nrf24l01_get_retransmissions_count();
-                    DEBUG_RADIO("Transmit: OK (0x%02X, %d).", status, count);
+                    DEBUG_RADIO("Transmit: OK (0x%02X, %d, %d).", status, count, radio_data.retransmisions_count);
                     break;
                 case NRF24L01_TX_STATUS_LOST:
-                    count = nrf24l01_get_retransmissions_count();
-                    DEBUG_RADIO("Transmit: LOST (0x%02X, %d).", status, count);
+                    DEBUG_RADIO("Transmit: LOST (0x%02X, %d, %d).", status, count, radio_data.retransmisions_count);
+                    radio_data.tx_lost_counter++;
                     break;
                 case NRF24L01_TX_STATUS_SENDING:
                     DEBUG_RADIO("Transmit: SENDING (0x%02X).", status);
+                    radio_data.tx_lost_counter++;
                     break;
                 default:
                     DEBUG_RADIO("Transmit: ERROR (0x%02X).", status);
+                    radio_data.tx_lost_counter++;
                     break;
             }
             memset(data, 0, sizeof(data));

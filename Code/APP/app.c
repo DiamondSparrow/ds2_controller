@@ -184,15 +184,13 @@ static void app_thread(void *arguments)
     ret = radio_init();
     DEBUG_INIT("%-15.15s %s.", "Radio:", ret == false ? "err" : "ok");
 
-    rtc_get_from_build();
-
     DEBUG(" * Running.");
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
-    display_set_menu(DISPLAY_MENU_ID_MOTOR);
-    osDelay(3000);
-    motor_test_all();
+    //display_set_menu(DISPLAY_MENU_ID_MOTOR);
+    //osDelay(3000);
+    //motor_test_all();
 
     while(1)
     {

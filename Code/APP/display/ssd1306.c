@@ -138,8 +138,8 @@ bool ssd1306_init(void)
     /* Set default values */
     ssd1306_data.current_x = 0;
     ssd1306_data.current_y = 0;
-    ssd1306_data.orientation_h = true;
-    ssd1306_data.orientation_v = true;
+    ssd1306_data.orientation_h = false;
+    ssd1306_data.orientation_v = false;
 
     /* Initialized OK */
     ssd1306_data.initialized = true;

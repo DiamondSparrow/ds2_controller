@@ -32,6 +32,7 @@
 
 #include "app.h"
 #include "motor/motor.h"
+#include "radio/radio.h"
 
 #include "chip.h"
 #include "bsp.h"
@@ -65,6 +66,7 @@ volatile display_menu_t display_menu_list[DISPLAY_MENU_ID_LAST] = {0};
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
+extern radio_data_t radio_data;
 
 /**********************************************************************************************************************
  * Prototypes of local functions
@@ -138,7 +140,7 @@ void display_menu_cb_clock(display_menu_id_t id)
     uint32_t timestamp = rtc_get();
     struct tm clock = {0};
 
-    display_menu_header(id, (uint8_t *)"Clock. -1-");
+    display_menu_header(id, (uint8_t *)"Clock");
 
     ConvertRtcTime(timestamp, &clock);
 
@@ -158,21 +160,48 @@ void display_menu_cb_motor(display_menu_id_t id)
 {
     uint8_t tmp[DISPLAY_MENU_LINE_LENGTH] = {0};
 
-    display_menu_header(id, (uint8_t *)"Motor -2-");
+    display_menu_header(id, (uint8_t *)"Motor");
 
-    snprintf((char *)tmp, 18, "L.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_LEFT), motor_get_speed_target(MOTOR_ID_LEFT));
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "L.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_LEFT), motor_get_speed_target(MOTOR_ID_LEFT));
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_1);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, 18, "L.C: %d mA.    ", motor_get_current(MOTOR_ID_LEFT));
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "L.C: %d mA.    ", motor_get_current(MOTOR_ID_LEFT));
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_2);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, 18, "R.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_RIGHT), motor_get_speed_target(MOTOR_ID_RIGHT));
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "R.S: %d / %d   ", motor_get_speed_current(MOTOR_ID_RIGHT), motor_get_speed_target(MOTOR_ID_RIGHT));
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_3);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, 18, "R.C: %d mA.    ", motor_get_current(MOTOR_ID_RIGHT));
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "R.C: %d mA.    ", motor_get_current(MOTOR_ID_RIGHT));
+    ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_4);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    ssd1306_update_screen();
+
+    return;
+}
+
+void display_menu_cb_radio(display_menu_id_t id)
+{
+    uint8_t tmp[DISPLAY_MENU_LINE_LENGTH] = {0};
+
+    display_menu_header(id, (uint8_t *)"Radio");
+
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "TxD: %d / %d   ", radio_data.tx_counter, radio_data.tx_lost_counter);
+    ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_1);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "RxD: %d    ", radio_data.rx_counter);
+    ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_2);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "RTR: %d    ", radio_data.retransmisions_count);
+    ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_3);
+    ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
+
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "QLT: %d %%  ", radio_data.quality);
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_4);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
@@ -187,15 +216,15 @@ void display_menu_cb_info(display_menu_id_t id)
 
     display_menu_header(id, (uint8_t *)"Info");
 
-    snprintf((char *)tmp, 18, "Ver: 1.1-a1");
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "Ver: 1.1-a1");
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_1);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, 18, "Clk: %d MHz.", (uint32_t)(SystemCoreClock / 1000000));
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "Clk: %d MHz.", (uint32_t)(SystemCoreClock / 1000000));
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_2);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, 18, "Tmp: %.02f degC.", adc_get_temperature());
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "Tmp: %.02f degC.", adc_get_temperature());
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_3);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
