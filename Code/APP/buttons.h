@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        uart.h
+ * @file        buttons
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-04-10
- * @brief       This is C header file template.
+ * @date        Feb 12, 2017
+ * @brief       Buttons control C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef UART_H_
-#define UART_H_
+#ifndef BUTTONS_H_
+#define BUTTONS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,13 +27,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdbool.h>
 
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define UART_0_BAUDRATE         115200
-#define UART_0_RX_BUFFER_SIZE   128
-#define UART_0_TX_BUFFER_SIZE   512
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -42,6 +40,15 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+/**
+ * @brief   Buttons enumerator.
+ */
+typedef enum
+{
+    BUTTONS_ID_VIEW_RIGHT,  //!< View Right
+    BUTTONS_ID_VIEW_LEFT,   //!< View Left
+    BUTTONS_ID_LAST,        //!< Last should stay last.
+} buttons_id_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -50,13 +57,24 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void uart_0_init(void);
-void uart_0_send(uint8_t *data, uint32_t size);
-void uart_0_send_rb(uint8_t *data, uint32_t size);
-uint32_t uart_0_read_rb(uint8_t *data, uint32_t size);
+/**
+ * @brief   Initialize buttons.
+ *
+ * @return  State of initialization.
+ * @retval  0   failed.
+ * @retval  1   success.
+ */
+bool buttons_init(void);
+
+/**
+ * @brief   Buttons thread.
+ *
+ * @param   arg Pointer to thread arguments.
+ */
+void buttons_thread(void *arguments);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* UART_H_ */
+#endif /* BUTTONS_H_ */

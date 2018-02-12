@@ -53,7 +53,7 @@ typedef struct
 {
     adc_id_t x;
     adc_id_t y;
-    gpio_t sw;
+    gpio_id_t sw;
     uint16_t x_zero;
     uint16_t y_zero;
 } joystick_config_t;
@@ -64,9 +64,9 @@ typedef struct
 joystick_config_t joystick_config[JOYSTICK_ID_LAST] =
 {
     {
-        .x = ADC_ID_JS_X,
-        .y = ADC_ID_JS_Y,
-        .sw = GPIO_SW_JS,
+        .x = ADC_ID_LAST,
+        .y = ADC_ID_LAST,
+        .sw = GPIO_ID_LAST,
         .x_zero = (JOYSTICK_ADC_RES / 2),
         .y_zero = (JOYSTICK_ADC_RES / 2),
     },
@@ -88,6 +88,10 @@ bool joystick_init(void)
 
     for(i = 0; i < JOYSTICK_ID_LAST; i++)
     {
+        if(joystick_config[i].x == ADC_ID_LAST || joystick_config[i].y == ADC_ID_LAST || joystick_config[i].sw == GPIO_ID_LAST)
+        {
+            continue;
+        }
         joystick_calibrate((joystick_id_t)i);
     }
 

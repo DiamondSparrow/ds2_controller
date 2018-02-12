@@ -42,24 +42,24 @@ extern "C" {
  *********************************************************************************************************************/
 typedef enum
 {
-    GPIO_LED_RED,
-    GPIO_LED_GREEN,
-    GPIO_LED_BLUE,
-    GPIO_SW_LEFT,
-    GPIO_SW_RIGHT,
-    GPIO_NRF214L01_CE,
-    GPIO_NRF214L01_CSN,
-    GPIO_MOTOR_LEFT_EN,
-    GPIO_MOTOR_LEFT_INA,
-    GPIO_MOTOR_LEFT_INB,
-    GPIO_MOTOR_RIGHT_EN,
-    GPIO_MOTOR_RIGHT_INA,
-    GPIO_MOTOR_RIGHT_INB,
-    GPIO_DISPLAY_RESTART,
-    GPIO_DISPLAY_DC,
-    GPIO_DISPLAY_SELECT,
-    GPIO_LAST,
-} gpio_t;
+    GPIO_ID_LED_RED,
+    GPIO_ID_LED_GREEN,
+    GPIO_ID_LED_BLUE,
+    GPIO_ID_SW_LEFT,
+    GPIO_ID_SW_RIGHT,
+    GPIO_ID_NRF214L01_CE,
+    GPIO_ID_NRF214L01_CSN,
+    GPIO_ID_MOTOR_LEFT_EN,
+    GPIO_ID_MOTOR_LEFT_INA,
+    GPIO_ID_MOTOR_LEFT_INB,
+    GPIO_ID_MOTOR_RIGHT_EN,
+    GPIO_ID_MOTOR_RIGHT_INA,
+    GPIO_ID_MOTOR_RIGHT_INB,
+    GPIO_ID_DISPLAY_RESTART,
+    GPIO_ID_DISPLAY_DC,
+    GPIO_ID_DISPLAY_SELECT,
+    GPIO_ID_LAST,
+} gpio_id_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -69,13 +69,13 @@ typedef enum
  * Prototypes of exported functions
  *********************************************************************************************************************/
 void gpio_init(void);
-void gpio_output(gpio_t gpio);
-void gpio_output_set(gpio_t gpio, bool state);
-void gpio_output_low(gpio_t gpio);
-void gpio_output_high(gpio_t gpio);
-void gpio_output_toggle(gpio_t gpio);
-void gpio_input(gpio_t gpio);
-bool gpio_input_get(gpio_t gpio);
+void gpio_output(gpio_id_t gpio);
+void gpio_output_set(gpio_id_t gpio, bool state);
+void gpio_output_low(gpio_id_t gpio);
+void gpio_output_high(gpio_id_t gpio);
+void gpio_output_toggle(gpio_id_t gpio);
+void gpio_input(gpio_id_t gpio);
+bool gpio_input_get(gpio_id_t gpio);
 
 #ifdef __cplusplus
 }

@@ -30,9 +30,11 @@
 #include "cli.h"
 
 #include "debug.h"
-#include "servo/servo.h"
+#include "motor/servo.h"
 #include "common.h"
 #include "bsp.h"
+
+#include "cmsis_os2.h"
 
 /**********************************************************************************************************************
  * Private constants
@@ -55,45 +57,54 @@ const cli_cmd_t cli_cmd_list[CLI_CMD_COUNT] =
     {
         (const uint8_t *)"help",
         (const uint8_t *)"help      Lists all the registered commands.",
-        cli_cmd_help_cb,
+        cli_cmd_cb_help,
         0,
     },
     {
         (const uint8_t *)"info",
         (const uint8_t *)"info      Shows device information.",
-        cli_cmd_info_cb,
+        cli_cmd_cb_info,
         0,
     },
     {
         (const uint8_t *)"servo",
         (const uint8_t *)"servo     Control servo:$servo %action $angle.",
-        cli_cmd_servo_cb,
+        cli_cmd_cb_servo,
         3,
     },
     {
         (const uint8_t *)"pointer",
         (const uint8_t *)"pointer   Control pointer: $pan %$tilt $angle.",
-        cli_cmd_pointer_cb,
+        cli_cmd_cb_pointer,
         2,
     },
+    {
+        (const uint8_t *)"os_info",
+        (const uint8_t *)"os_info   Get OS  information (thread stack size, etcs).",
+        cli_cmd_cb_os_info,
+        0,
+    }
 };
 
 /**********************************************************************************************************************
  * Exported variables
  *********************************************************************************************************************/
+extern osThreadId_t app_thread_id;
+extern osThreadId_t cli_app_thread_id;
+extern osThreadId_t display_thread_id;
+extern osThreadId_t motor_thread_id;
+extern osThreadId_t radio_thread_id;
+extern osThreadId_t sensors_thread_id;
 
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
+static void cli_cmd_os_info_print(osThreadId_t id);
 
 /**********************************************************************************************************************
  * Exported functions
  *********************************************************************************************************************/
-
-/**********************************************************************************************************************
- * Private functions
- *********************************************************************************************************************/
-bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd)
+bool cli_cmd_cb_help(uint8_t *data, uint32_t size, const uint8_t *cmd)
 {
     uint8_t i = 0;
 
@@ -112,7 +123,7 @@ bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd)
     return false;
 }
 
-bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd)
+bool cli_cmd_cb_info(uint8_t *data, uint32_t size, const uint8_t *cmd)
 {
     UNUSED_VARIABLE(cmd);
 
@@ -123,7 +134,7 @@ bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd)
     return false;
 }
 
-bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd)
+bool cli_cmd_cb_servo(uint8_t *data, uint32_t size, const uint8_t *cmd)
 {
     uint8_t ptr_size = 0;
     uint8_t *ptr = NULL;
@@ -185,7 +196,7 @@ bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd)
     return false;
 }
 
-bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd)
+bool cli_cmd_cb_pointer(uint8_t *data, uint32_t size, const uint8_t *cmd)
 {
     int8_t pan = 0;
     int8_t tilt = 0;
@@ -207,4 +218,32 @@ bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd)
     DEBUG("Pointer %d %d.", pan, tilt);
 
     return false;
+}
+
+bool cli_cmd_cb_os_info(uint8_t *data, uint32_t size, const uint8_t *cmd)
+{
+    DEBUG("# OS info:");
+    cli_cmd_os_info_print(app_thread_id);
+    cli_cmd_os_info_print(cli_app_thread_id);
+    cli_cmd_os_info_print(display_thread_id);
+    cli_cmd_os_info_print(motor_thread_id);
+    cli_cmd_os_info_print(radio_thread_id);
+    cli_cmd_os_info_print(sensors_thread_id);
+
+    return false;
+}
+
+/**********************************************************************************************************************
+ * Private functions
+ *********************************************************************************************************************/
+static void cli_cmd_os_info_print(osThreadId_t id)
+{
+    DEBUG("- %s: prio = %d, stat = %d, sz = %d/%d B.;",
+          osThreadGetName(id),
+          osThreadGetState(id),
+          osThreadGetPriority(id),
+          osThreadGetStackSize(id),
+          osThreadGetStackSpace(id));
+
+    return;
 }

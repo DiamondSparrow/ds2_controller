@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file        uart.h
+ * @file        display_popup.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-04-10
- * @brief       This is C header file template.
+ * @date        2018-02-12
+ * @brief       Display pop-up C header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -17,8 +17,8 @@
  **********************************************************************************************************************
  */
 
-#ifndef UART_H_
-#define UART_H_
+#ifndef DISPLAY_POPUP_H_
+#define DISPLAY_POPUP_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,13 +27,12 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdint.h>
+#include <stdbool.h>
 
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define UART_0_BAUDRATE         115200
-#define UART_0_RX_BUFFER_SIZE   128
-#define UART_0_TX_BUFFER_SIZE   512
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -42,6 +41,12 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported types
  *********************************************************************************************************************/
+typedef struct
+{
+    bool active;
+    uint8_t *text;
+    uint32_t timeout;
+} display_popup_t;
 
 /**********************************************************************************************************************
  * Prototypes of exported variables
@@ -50,13 +55,10 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-void uart_0_init(void);
-void uart_0_send(uint8_t *data, uint32_t size);
-void uart_0_send_rb(uint8_t *data, uint32_t size);
-uint32_t uart_0_read_rb(uint8_t *data, uint32_t size);
+void display_popup_view(display_popup_t *data);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* UART_H_ */
+#endif /* DISPLAY_POPUP_H_ */

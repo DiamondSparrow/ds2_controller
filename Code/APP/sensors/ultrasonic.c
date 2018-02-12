@@ -42,8 +42,8 @@
  *********************************************************************************************************************/
 typedef struct
 {
-    gpio_t triger;
-    gpio_t echo;
+    gpio_id_t triger;
+    gpio_id_t echo;
     uint32_t range;
 } ultrasonic_t;
 
@@ -52,7 +52,7 @@ typedef struct
  *********************************************************************************************************************/
 ultrasonic_t ultrasonic_list[ULTRASONIC_ID_LAST] =
 {
-    {GPIO_ULTRASONIC_1_TRIGER, GPIO_ULTRASONIC_1_ECHO, 0},
+    {.triger = GPIO_ID_LAST, .echo = GPIO_ID_LAST, .range = 0},
 };
 
 /**********************************************************************************************************************
@@ -73,6 +73,10 @@ bool ultrasonic_init(void)
 
     for(i = 0; i < ULTRASONIC_ID_LAST; i++)
     {
+        if(ultrasonic_list[i].triger == GPIO_ID_LAST || ultrasonic_list[i].echo == GPIO_ID_LAST)
+        {
+            continue;
+        }
         gpio_output(ultrasonic_list[i].triger);
         gpio_output_set(ultrasonic_list[i].triger, false);
         gpio_input(ultrasonic_list[i].echo);
@@ -95,7 +99,7 @@ uint32_t ultrasonic_read(ultrasonic_id_t id)
 
     do
     {
-        if(gpio_input_get(GPIO_ULTRASONIC_1_ECHO) == true)
+        if(gpio_input_get(ultrasonic_list[id].echo) == true)
         {
             high = osKernelGetTickCount() / (osKernelGetTickFreq() / 1000000);
             timeout = 0;
@@ -113,7 +117,7 @@ uint32_t ultrasonic_read(ultrasonic_id_t id)
     while(1);
     do
     {
-        if(gpio_input_get(GPIO_ULTRASONIC_1_ECHO) == false)
+        if(gpio_input_get(ultrasonic_list[id].echo) == false)
         {
             low = osKernelGetTickCount() / (osKernelGetTickFreq() / 1000000);
             break;

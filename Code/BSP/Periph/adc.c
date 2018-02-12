@@ -97,10 +97,14 @@ void adc_init(void)
 
 uint32_t adc_get_value_raw(adc_id_t id)
 {
+    if(id >= ADC_ID_LAST)
+    {
+        return UINT32_MAX;
+    }
 #if ADC_AVG_COUNT > 1
     return (adc_data[id].avg.value);
 #else
-    uint32_t value = adc_data[ch].value;
+    uint32_t value = adc_data[id].value;
 
     if(!(value & ADC_DR_OVERRUN) && (value & ADC_SEQ_GDAT_DATAVALID))
     {
@@ -113,7 +117,14 @@ uint32_t adc_get_value_raw(adc_id_t id)
 
 uint32_t adc_get_value_volt(adc_id_t id)
 {
-    uint32_t value = adc_get_value_raw(id);
+    uint32_t value = 0;
+
+    if(id >= ADC_ID_LAST)
+    {
+        return UINT32_MAX;
+    }
+
+    value = adc_get_value_raw(id);
 
     if(value != UINT32_MAX)
     {

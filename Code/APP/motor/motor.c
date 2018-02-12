@@ -73,9 +73,9 @@ motor_data_t motor_data[MOTOR_ID_LAST] =
     {
         .drive =
         {
-            .in_a = GPIO_MOTOR_LEFT_INA,
-            .in_b = GPIO_MOTOR_LEFT_INB,
-            .en = GPIO_MOTOR_LEFT_EN,
+            .in_a = GPIO_ID_MOTOR_LEFT_INA,
+            .in_b = GPIO_ID_MOTOR_LEFT_INB,
+            .en = GPIO_ID_MOTOR_LEFT_EN,
             .pwm = PWM_ID_MOTOR_LEFT,
             .cs = ADC_ID_MOTOR_LEFT_CURR,
         },
@@ -90,9 +90,9 @@ motor_data_t motor_data[MOTOR_ID_LAST] =
     {
         .drive =
         {
-            .in_a = GPIO_MOTOR_RIGHT_INA,
-            .in_b = GPIO_MOTOR_RIGHT_INB,
-            .en = GPIO_MOTOR_RIGHT_EN,
+            .in_a = GPIO_ID_MOTOR_RIGHT_INA,
+            .in_b = GPIO_ID_MOTOR_RIGHT_INB,
+            .en = GPIO_ID_MOTOR_RIGHT_EN,
             .pwm = PWM_ID_MOTOR_RIGHT,
             .cs = ADC_ID_MOTOR_RIGHT_CURR
         },

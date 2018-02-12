@@ -174,11 +174,20 @@ void pwm_init(void)
 
 uint32_t pwm_get_duty_cycle(pwm_id_t id)
 {
+    if(id >= PWM_ID_LAST)
+    {
+        return UINT32_MAX;
+    }
+
     return Chip_SCTPWM_GetDutyCycle(pwm_config[id].sct, pwm_config[id].index);
 }
 
 void pwm_set(pwm_id_t id, uint32_t duty_cycle)
 {
+    if(id >= PWM_ID_LAST)
+    {
+        return;
+    }
     Chip_SCTPWM_SetDutyCycle(pwm_config[id].sct, pwm_config[id].index, duty_cycle);
 
     return;
@@ -186,8 +195,14 @@ void pwm_set(pwm_id_t id, uint32_t duty_cycle)
 
 void pwm_set_percentage(pwm_id_t id, uint8_t percentage)
 {
-    uint32_t duty_cycle = Chip_SCTPWM_PercentageToTicks(pwm_config[id].sct, percentage);
+    uint32_t duty_cycle = 0;
 
+    if(id >= PWM_ID_LAST)
+    {
+        return;
+    }
+
+    duty_cycle = Chip_SCTPWM_PercentageToTicks(pwm_config[id].sct, percentage);
     Chip_SCTPWM_SetDutyCycle(pwm_config[id].sct, pwm_config[id].index, duty_cycle);
 
     return;

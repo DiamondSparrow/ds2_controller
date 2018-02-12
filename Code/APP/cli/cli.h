@@ -48,7 +48,7 @@ extern "C" {
  * @param   size    Length, in bytes of the data buffer.
  * @param   cmd     The entire string as input by the user (from which parameters can be extracted).
  */
-typedef bool (*cli_cmd_callback)(uint8_t *data, size_t size, const uint8_t *cmd);
+typedef bool (*cli_cmd_callback)(uint8_t *data, uint32_t size, const uint8_t *cmd);
 
 /**
  * @brief   The structure that defines command line commands.

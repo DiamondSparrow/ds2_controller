@@ -1,10 +1,10 @@
 /**
  **********************************************************************************************************************
- * @file         ssd1306.c
- * @author       Diamond Sparrow
- * @version      1.0.0.0
- * @date         2016-08-29
- * @brief        SSD1306 OLED display C source file.
+ * @file        ssd1306.c
+ * @author      Diamond Sparrow
+ * @version     1.0.0.0
+ * @date        2018-02-12
+ * @brief       SSD1306 OLED display control C source file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
  *              IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND\n
@@ -38,11 +38,6 @@
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
-
-/** Write command. */
-//#define SSD1306_WRITECOMMAND(command)       i2c_write_reg((SSD1306_I2C_ADDR >> 1), 0x00, (command))
-/** Write data. */
-//#define SSD1306_WRITEDATA(data)             i2c_write_reg((SSD1306_I2C_ADDR >> 1), 0x40, (data))
 /** Absolute value. */
 #define ABS(x)   ((x) > 0 ? (x) : -(x))
 
@@ -54,14 +49,14 @@
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/* SSD1306 data buffer */
+/** SSD1306 data buffer */
 static uint8_t ssd1306_buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8 + 1];
 
 typedef struct {
     uint16_t current_x;
     uint16_t current_y;
-    uint8_t inverted;
-    uint8_t initialized;
+    bool inverted;
+    bool initialized;
     bool orientation_h;
     bool orientation_v;
 } ssd1306_t;
@@ -75,8 +70,29 @@ static ssd1306_t ssd1306_data = {0};
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
+/**
+ * @brief   Write command to SSD1306.
+ *
+ * @param   command Command to write.
+ */
 static void ssd1306_write_cmd(uint8_t command);
+
+/**
+ * @brief   Write commands to SSD1306.
+ *
+ * @param   commands    Pointer to commands array to write.
+ * @param   count       Commands count.
+ */
+static void ssd1306_write_cmds(uint8_t *commands, uint8_t count);
+
+/**
+ * @brief   Write data to SSD1306.
+ *
+ * @param   data    Pointer to data to write.
+ * @param   size    Size of data in bytes.
+ */
 static void ssd1306_write_data(uint8_t *data, uint16_t size);
+
 
 /**********************************************************************************************************************
  * Exported functions
@@ -122,50 +138,70 @@ bool ssd1306_init(void)
     /* Set default values */
     ssd1306_data.current_x = 0;
     ssd1306_data.current_y = 0;
+    ssd1306_data.orientation_h = true;
+    ssd1306_data.orientation_v = true;
 
     /* Initialized OK */
-    ssd1306_data.initialized = 1;
+    ssd1306_data.initialized = true;
 
     /* Return OK */
     return true;
 }
 
-void ssd1306_display_on(void)
+
+void ssd1306_on(void)
 {
-    ssd1306_write_cmd(0x8D);
-    ssd1306_write_cmd(0x14);
-    ssd1306_write_cmd(0xAF);
+    ssd1306_write_cmds((uint8_t[]){0x8D, 0x14, 0xAF}, 3);
 
     return;
 }
 
-void ssd1306_display_off(void)
+void ssd1306_off(void)
 {
-    ssd1306_write_cmd(0x8D);
-    ssd1306_write_cmd(0x10);
-    ssd1306_write_cmd(0xAE);
+    ssd1306_write_cmds((uint8_t[]){0x8D, 0x10, 0xAE}, 3);
 
     return;
 }
 
-void ssd1306_display_invert(void)
+void ssd1306_invert_on(void)
 {
     ssd1306_write_cmd(0xA7);
 
     return;
 }
 
-void ssd1306_display_normal(void)
+void ssd1306_invert_off(void)
 {
     ssd1306_write_cmd(0xA6);
 
     return;
 }
 
-void ssd1306_set_contrast(uint8_t contrast)
+void ssd1306_invert_toggle(void)
 {
-    ssd1306_write_cmd(0x81);
-    ssd1306_write_cmd(contrast);
+#if 1
+    uint16_t i;
+
+    /* Toggle invert */
+    ssd1306_data.inverted = !ssd1306_data.inverted;
+
+    /* Do memory toggle */
+    for(i = 0; i < sizeof(ssd1306_buffer); i++)
+    {
+        ssd1306_buffer[i] = ~ssd1306_buffer[i];
+    }
+#else
+    if(!ssd1306_data.inverted)
+    {
+        ssd1306_invert_on();
+        ssd1306_data.inverted = true;
+    }
+    else
+    {
+        ssd1306_invert_off();
+        ssd1306_data.inverted = false;
+    }
+#endif
 
     return;
 }
@@ -173,30 +209,20 @@ void ssd1306_set_contrast(uint8_t contrast)
 void ss1306_orientation_flip_h(void)
 {
     ssd1306_data.orientation_h = ssd1306_data.orientation_h == true ? false : true;
-    if(ssd1306_data.orientation_h)
-    {
-        ssd1306_write_cmd(0xC0 | 0x08);
-    }
-    else
-    {
-        ssd1306_write_cmd(0xC0 | 0x00);
-    }
 
     return;
 }
 
 void ss1306_orientation_flip_v(void)
 {
-    ssd1306_data.orientation_v = ~ssd1306_data.orientation_v == true ? false : true;
-    if(ssd1306_data.orientation_v)
-    {
-        ssd1306_write_cmd(0xA0 | 0x01);
-    }
-    else
-    {
-        ssd1306_write_cmd(0xA0 | 0x00);
-    }
-    ssd1306_write_cmd(0xC8);
+    ssd1306_data.orientation_v = ssd1306_data.orientation_v == true ? false : true;
+
+    return;
+}
+
+void ssd1306_set_contrast(uint8_t contrast)
+{
+    ssd1306_write_cmds((uint8_t[]){0x81, contrast}, 3);
 
     return;
 }
@@ -207,28 +233,8 @@ void ssd1306_update_screen(void)
 
     for(y = 0; y < SSD1306_HEIGHT / 8; y++)
     {
-        ssd1306_write_cmd(0xB0 + y);
-        ssd1306_write_cmd(0x02);
-        ssd1306_write_cmd(0x10);
-
+        ssd1306_write_cmds((uint8_t[]){0xB0 + y, 0x02, 0x10}, 3);
         ssd1306_write_data(&ssd1306_buffer[SSD1306_WIDTH * y], SSD1306_WIDTH);
-    }
-    osDelay(1);
-
-    return;
-}
-
-void ssd1306_toggle_invert(void)
-{
-    uint16_t i;
-
-    /* Toggle invert */
-    ssd1306_data.inverted = !ssd1306_data.inverted;
-
-    /* Do memory toggle */
-    for(i = 0; i < sizeof(ssd1306_buffer); i++)
-    {
-        ssd1306_buffer[i] = ~ssd1306_buffer[i];
     }
 
     return;
@@ -256,6 +262,14 @@ void ssd1306_draw_pixel(uint16_t x, uint16_t y, ssd1306_color_t c)
         c = (ssd1306_color_t)!c;
     }
 
+    if(ssd1306_data.orientation_v)
+    {
+        x = SSD1306_WIDTH - x - 1;
+    }
+    if(ssd1306_data.orientation_h)
+    {
+        y = SSD1306_HEIGHT - y - 1;
+    }
     /* Set color */
     if(c == SSD1306_COLOR_WHITE)
     {
@@ -285,8 +299,8 @@ uint8_t ssd1306_putc(uint8_t ch, fonts_t *font, ssd1306_color_t color)
     uint32_t j = 0;
 
     /* Check available space in LCD */
-    if(SSD1306_WIDTH <= (ssd1306_data.current_x + font->font_width)
-        || SSD1306_HEIGHT <= (ssd1306_data.current_y + font->font_height))
+    if(SSD1306_WIDTH < (ssd1306_data.current_x + font->font_width)
+        || SSD1306_HEIGHT < (ssd1306_data.current_y + font->font_height))
     {
         /* Error */
         return 0;
@@ -676,13 +690,28 @@ void ssd1306_draw_filled_circle(int16_t x0, int16_t y0, int16_t r, ssd1306_color
 static void ssd1306_write_cmd(uint8_t command)
 {
 #if SSD1306_DRV_MODE
-    i2c_write_reg((SSD1306_I2C_ADDR >> 1), 0x00, (command));
+    i2c_write_reg((SSD1306_I2C_ADDR >> 1), 0x00, command);
 #else
-    gpio_output_high(GPIO_DISPLAY_SELECT);
-    gpio_output_low(GPIO_DISPLAY_DC);
-    gpio_output_low(GPIO_DISPLAY_SELECT);
+    gpio_output_high(GPIO_ID_DISPLAY_SELECT);
+    gpio_output_low(GPIO_ID_DISPLAY_DC);
+    gpio_output_low(GPIO_ID_DISPLAY_SELECT);
     spi_1_write_buffer(&command, 1);
-    gpio_output_high(GPIO_DISPLAY_SELECT);
+    gpio_output_high(GPIO_ID_DISPLAY_SELECT);
+#endif
+
+    return;
+}
+
+static void ssd1306_write_cmds(uint8_t *commands, uint8_t count)
+{
+#if SSD1306_DRV_MODE
+    i2c_write_reg_multi((SSD1306_I2C_ADDR >> 1), 0x00, commands, count);
+#else
+    gpio_output_high(GPIO_ID_DISPLAY_SELECT);
+    gpio_output_low(GPIO_ID_DISPLAY_DC);
+    gpio_output_low(GPIO_ID_DISPLAY_SELECT);
+    spi_1_write_buffer(commands, count);
+    gpio_output_high(GPIO_ID_DISPLAY_SELECT);
 #endif
 
     return;
@@ -693,11 +722,11 @@ static void ssd1306_write_data(uint8_t *data, uint16_t size)
 #if SSD1306_DRV_MODE
     i2c_write_reg_multi((SSD1306_I2C_ADDR >> 1), 0x40, data, size);
 #else
-    gpio_output_high(GPIO_DISPLAY_SELECT);
-    gpio_output_high(GPIO_DISPLAY_DC);
-    gpio_output_low(GPIO_DISPLAY_SELECT);
+    gpio_output_high(GPIO_ID_DISPLAY_SELECT);
+    gpio_output_high(GPIO_ID_DISPLAY_DC);
+    gpio_output_low(GPIO_ID_DISPLAY_SELECT);
     spi_1_write_buffer(data, size);
-    gpio_output_high(GPIO_DISPLAY_SELECT);
+    gpio_output_high(GPIO_ID_DISPLAY_SELECT);
 #endif
 
     return;

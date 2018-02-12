@@ -3,7 +3,7 @@
  * @file        ssd1306.h
  * @author      Diamond Sparrow
  * @version     1.0.0.0
- * @date        2016-08-29
+ * @date        2018-02-12
  * @brief       SSD1306 OLED display header file.
  **********************************************************************************************************************
  * @warning     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR \n
@@ -27,10 +27,10 @@ extern "C" {
 /**********************************************************************************************************************
  * Includes
  *********************************************************************************************************************/
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "fonts.h"
-
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
@@ -48,7 +48,7 @@ extern "C" {
 #define SSD1306_HEIGHT          64
 #endif
 
-#define SSD1306_DRV_MODE        0   //!< Driver mode: 0 - SPI, 1 - I2C
+#define SSD1306_DRV_MODE        0 //!< Driver mode: 0 - SPI, 1 - I2C
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -83,28 +83,47 @@ typedef enum
 bool ssd1306_init(void);
 
 /**
- * @brief   Power on display.
+ * @brief   Power on SSD1306.
  */
-void ssd1306_power_on(void);
+void ssd1306_on(void);
 
 /**
- * @brief   Power off display.
+ * @brief   Power off SSD1306.
  */
-void ssd1306_power_off(void);
+void ssd1306_off(void);
 
-void ssd1306_display_invert(void);
-void ssd1306_display_normal(void);
-void ssd1306_set_contrast(uint8_t contrast);
+/**
+ * @brief   Turn on inversion in SSD1306.
+ */
+void ssd1306_invert_on(void);
+
+/**
+ * @brief   Turn off inversion in SSD1306.
+ */
+void ssd1306_invert_off(void);
+
+/**
+ * @brief   Toggles pixels inversion inside internal RAM.
+ *
+ * @note    @ref ssd1306_update_screen() must be called after that in order to see updated display.
+ */
+void ssd1306_invert_toggle(void);
 
 /**
  * @brief   Flip the horizontal orientation of the screen.
  */
 void ss1306_orientation_flip_h(void);
-
 /**
  * @brief   Flip the vertical orientation of the screen.
  */
 void ss1306_orientation_flip_v(void);
+
+/**
+ * @brief   Set contrast.
+ *
+ * @param   contrast    Contrast value to set.
+ */
+void ssd1306_set_contrast(uint8_t contrast);
 
 /**
  * @brief   Updates buffer from internal RAM to display.
@@ -112,13 +131,6 @@ void ss1306_orientation_flip_v(void);
  * @note    This function must be called each time you do some changes to display, to update buffer from RAM to display.
  */
 void ssd1306_update_screen(void);
-
-/**
- * @brief   Toggles pixels invertion inside internal RAM.
- *
- * @note    @ref ssd1306_update_screen() must be called after that in order to see updated display.
- */
-void ssd1306_toggle_invert(void);
 
 /**
  * @brief   Fills entire LCD with desired color

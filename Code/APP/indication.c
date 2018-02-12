@@ -37,6 +37,7 @@ const osTimerAttr_t indication_timer_attr =
 {
     .name = "INDICATION",
 };
+
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
@@ -214,42 +215,42 @@ void indication_handle(void *arguments)
  *********************************************************************************************************************/
 static void indication_red_on(void)
 {
-    gpio_output_low(GPIO_LED_RED);
+    gpio_output_low(GPIO_ID_LED_RED);
     
     return;
 }
 
 static void indication_red_off(void)
 {
-    gpio_output_high(GPIO_LED_RED);
+    gpio_output_high(GPIO_ID_LED_RED);
 
     return;
 }
 
 static void indication_green_on(void)
 {
-    gpio_output_low(GPIO_LED_GREEN);
+    gpio_output_low(GPIO_ID_LED_GREEN);
 
     return;
 }
 
 static void indication_green_off(void)
 {
-    gpio_output_high(GPIO_LED_GREEN);
+    gpio_output_high(GPIO_ID_LED_GREEN);
 
     return;
 }
 
 static void indication_blue_on(void)
 {
-    gpio_output_low(GPIO_LED_BLUE);
+    gpio_output_low(GPIO_ID_LED_BLUE);
 
     return;
 }
 
 static void indication_blue_off(void)
 {
-    gpio_output_high(GPIO_LED_BLUE);
+    gpio_output_high(GPIO_ID_LED_BLUE);
 
     return;
 }

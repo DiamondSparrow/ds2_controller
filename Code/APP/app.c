@@ -28,6 +28,7 @@
 #include "cmsis_os2.h"
 
 #include "app.h"
+#include "buttons.h"
 #include "debug.h"
 #include "indication.h"
 #include "bsp.h"
@@ -36,11 +37,11 @@
 #include "display/display.h"
 #include "display/ssd1306.h"
 #include "motor/motor.h"
+#include "motor/servo.h"
 #include "sensors/am2301.h"
 #include "sensors/sensors.h"
 #include "sensors/joystick.h"
 #include "sensors/ultrasonic.h"
-#include "servo/servo.h"
 #include "radio/radio.h"
 
 /**********************************************************************************************************************
@@ -160,12 +161,7 @@ void app_error(void)
  *********************************************************************************************************************/
 static void app_thread(void *arguments)
 {
-    display_menu_id_t menu_id = DISPLAY_MENU_ID_WELCOME;
     uint8_t ret = 0;
-    uint8_t d = 0;
-    uint8_t c = 0;
-    bool sw_left = false;
-    bool sw_right = false;
 
     debug_init();
     DEBUG_INIT(" * Initializing.");
@@ -175,20 +171,18 @@ static void app_thread(void *arguments)
     DEBUG_INIT("%-15.15s ok.", "Indication:");
     cli_app_init();
     DEBUG_INIT("%-15.15s ok.", "CLI APP:");
-    //servo_init();
-    //DEBUG_INIT("%-15.15s ok.", "Servo:");
-    //ultrasonic_init();
-    //DEBUG_INIT("%-15.15s ok.", "Ultrasonic:");
-    //ret = joystick_init();
-    //DEBUG_INIT("%-15.15s %s.", "Joystick:", ret == false ? "err" : "ok");
     //ret = sensors_init();
     //DEBUG_INIT("%-15.15s %s.", "Sensors:", ret == false ? "err" : "ok");
-    ret = radio_init();
-    DEBUG_INIT("%-15.15s %s.", "Radio:", ret == false ? "err" : "ok");
-    ret = motor_init();
-    DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
+    ret = buttons_init();
+    DEBUG_INIT("%-15.15s %s.", "Buttons:", ret == false ? "err" : "ok");
     ret = display_init();
     DEBUG_INIT("%-15.15s %s.", "Display:", ret == false ? "err" : "ok");
+    ret = motor_init();
+    DEBUG_INIT("%-15.15s %s.", "Motor:", ret == false ? "err" : "ok");
+    ret = servo_init();
+    DEBUG_INIT("%-15.15s %s.", "Servo:", ret == false ? "err" : "ok");
+    ret = radio_init();
+    DEBUG_INIT("%-15.15s %s.", "Radio:", ret == false ? "err" : "ok");
 
     rtc_get_from_build();
 
@@ -196,79 +190,13 @@ static void app_thread(void *arguments)
     indication_set(INDICATION_STANDBY);
     DEBUG("State: standby.");
 
-    menu_id = DISPLAY_MENU_ID_MOTOR;
-    display_menu_set(menu_id);
+    display_set_menu(DISPLAY_MENU_ID_MOTOR);
     osDelay(3000);
     motor_test_all();
 
     while(1)
     {
-        d = 20;
-        c = 0;
-        while(d--)
-        {
-            if(gpio_input_get(GPIO_SW_LEFT) == false)
-            {
-                c++;
-            }
-            osDelay(1);
-        }
-        if(c >= 10)
-        {
-            if(sw_left == false)
-            {
-                DEBUG("SW LEFT.");
-                menu_id--;
-                if(menu_id == 0)
-                {
-                    menu_id = (display_menu_id_t)(DISPLAY_MENU_ID_LAST - 1);
-                }
-                display_menu_set(menu_id);
-            }
-            sw_left = true;
-        }
-        else
-        {
-            sw_left = false;
-        }
-        osDelay(10);
-        d = 20;
-        c = 0;
-        while(d--)
-        {
-            if(gpio_input_get(GPIO_SW_RIGHT) == false)
-            {
-                c++;
-            }
-            osDelay(1);
-        }
-        if(c >= 10)
-        {
-            if(sw_right == false)
-            {
-                DEBUG("SW RIGHT.");
-                menu_id++;
-                if(menu_id == DISPLAY_MENU_ID_LAST)
-                {
-                    menu_id = DISPLAY_MENU_ID_CLOCK;
-                }
-                display_menu_set(menu_id);
-            }
-            sw_right = true;
-        }
-        else
-        {
-            sw_right = false;
-        }
-        osDelay(10);
+        osDelay(100);
     }
 }
 
-void HardFault_Handler(void)
-{
-    debug_send_blocking((uint8_t *)"HARD FAULT!\r", 13);
-
-    NVIC_SystemReset();
-
-    return;
-}
