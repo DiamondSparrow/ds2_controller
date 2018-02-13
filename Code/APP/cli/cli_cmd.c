@@ -238,12 +238,17 @@ bool cli_cmd_cb_os_info(uint8_t *data, uint32_t size, const uint8_t *cmd)
  *********************************************************************************************************************/
 static void cli_cmd_os_info_print(osThreadId_t id)
 {
-    DEBUG("- %s: prio = %d, stat = %d, sz = %d/%d B.;",
+    if(id == NULL)
+    {
+        return;
+    }
+
+    DEBUG("- %-10.10s: stat = %d, prio = %d, sz = %4d / %4d B.;",
           osThreadGetName(id),
           osThreadGetState(id),
           osThreadGetPriority(id),
-          osThreadGetStackSize(id),
-          osThreadGetStackSpace(id));
+          osThreadGetStackSpace(id),
+          osThreadGetStackSize(id));
 
     return;
 }
