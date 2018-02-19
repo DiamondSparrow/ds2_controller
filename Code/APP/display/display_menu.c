@@ -197,7 +197,7 @@ void display_menu_cb_radio(display_menu_id_t id)
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_2);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 
-    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "RTR: %d    ", radio_data.retransmisions_count);
+    snprintf((char *)tmp, DISPLAY_MENU_LINE_LENGTH, "RTR: %d    ", radio_data.rtr);
     ssd1306_goto_xy(DISPLAY_MENU_LINE_X, DISPLAY_MENU_LINE_Y_3);
     ssd1306_puts(tmp, &fonts_7x10, SSD1306_COLOR_WHITE);
 

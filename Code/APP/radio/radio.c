@@ -32,6 +32,18 @@
 #include "debug.h"
 
 /**********************************************************************************************************************
+ * Private definitions and macros
+ *********************************************************************************************************************/
+#define RADIO_CHANNEL           1
+#define RADIO_PAYLAOD_SIZE      32
+#define RADIO_TRANSMIT_TMO_MS   10  //!< Radio data transmit timeout in milliseconds.
+#define RADIO_RECEIVE_TMO_MS    10  //!< Radio data receive timeout in milliseconds.
+
+/**********************************************************************************************************************
+ * Private typedef
+ *********************************************************************************************************************/
+
+/**********************************************************************************************************************
  * Private constants
  *********************************************************************************************************************/
 /** Sensors thread attributes. */
@@ -46,22 +58,14 @@ const uint8_t radio_my_address[NRF24L01_ADDRESS_SIZE] = {0xE7, 0xE7, 0xE7, 0xE7,
 const uint8_t radio_peer_address[NRF24L01_ADDRESS_SIZE] = {0xD7, 0xD7, 0xD7, 0xD7, 0xD7};
 
 /**********************************************************************************************************************
- * Private definitions and macros
- *********************************************************************************************************************/
-#define RADIO_CHANNEL       1
-#define RADIO_PAYLAOD_SIZE  32
-
-/**********************************************************************************************************************
- * Private typedef
- *********************************************************************************************************************/
-
-/**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
 /** Radio thread ID. */
 osThreadId_t radio_thread_id;
 /** Radio data structure. */
 volatile radio_data_t radio_data = {0};
+/** Radio data buffer. */
+static uint8_t radio_data_buffer[RADIO_PAYLAOD_SIZE] = {0};
 
 /**********************************************************************************************************************
  * Exported variables
@@ -70,6 +74,11 @@ volatile radio_data_t radio_data = {0};
 /**********************************************************************************************************************
  * Prototypes of local functions
  *********************************************************************************************************************/
+static bool radio_transmit_handler(void);
+static bool radio_receive_handler(void);
+static bool radio_packet_builder(uint8_t *packet, uint8_t size);
+static bool radio_packet_parser(uint8_t *packet, uint8_t size);
+static void radio_quality_check(void);
 
 /**********************************************************************************************************************
  * Exported functions
@@ -88,11 +97,6 @@ bool radio_init(void)
 
 void radio_thread(void *arguments)
 {
-    uint8_t data[RADIO_PAYLAOD_SIZE] = {0};
-    uint8_t count = 0;
-    uint32_t rtr_cnt = 0;
-    nrf24l01_tx_status_t status = NRF24L01_TX_STATUS_LOST;
-
     nrf24l01_init(RADIO_CHANNEL, RADIO_PAYLAOD_SIZE);
     nrf24l01_set_my_address((uint8_t *)radio_my_address);
     nrf24l01_set_tx_address((uint8_t *)radio_peer_address);
@@ -101,60 +105,9 @@ void radio_thread(void *arguments)
 
     while(1)
     {
-        if(nrf24l01_data_ready())
+        if(radio_receive_handler() == true)
         {
-            nrf24l01_get_data(data);
-            DEBUG_RADIO("Received data:");
-            debug_send_hex_os(data, RADIO_PAYLAOD_SIZE);
-            radio_data.rx_counter++;
-            // TODO: command parser
-            // TODO: form response
-            data[0]++;
-            nrf24l01_transmit(data);
-            while(1)
-            {
-                osDelay(1);
-                status = nrf24l01_get_tx_status();
-                if(status != NRF24L01_TX_STATUS_SENDING)
-                {
-                    break;
-                }
-            }
-            count = nrf24l01_get_retransmissions_count();
-            radio_data.tx_counter++;
-            if(radio_data.tx_counter)
-            {
-                if(count <= 15)
-                {
-                    rtr_cnt += count;
-                    radio_data.retransmisions_count = (uint32_t)((float)rtr_cnt / (float)radio_data.tx_counter);
-                    radio_data.quality = (uint32_t)(100.0 - ((float)radio_data.retransmisions_count * (100.0 / 15.0)));
-                }
-            }
-            else
-            {
-                rtr_cnt = 0;
-                radio_data.tx_counter = 0;
-            }
-            switch(status)
-            {
-                case NRF24L01_TX_STATUS_OK:
-                    DEBUG_RADIO("Transmit: OK (0x%02X, %d, %d).", status, count, radio_data.retransmisions_count);
-                    break;
-                case NRF24L01_TX_STATUS_LOST:
-                    DEBUG_RADIO("Transmit: LOST (0x%02X, %d, %d).", status, count, radio_data.retransmisions_count);
-                    radio_data.tx_lost_counter++;
-                    break;
-                case NRF24L01_TX_STATUS_SENDING:
-                    DEBUG_RADIO("Transmit: SENDING (0x%02X).", status);
-                    radio_data.tx_lost_counter++;
-                    break;
-                default:
-                    DEBUG_RADIO("Transmit: ERROR (0x%02X).", status);
-                    radio_data.tx_lost_counter++;
-                    break;
-            }
-            memset(data, 0, sizeof(data));
+            radio_transmit_handler();
             nrf24l01_power_up_rx();
         }
         osDelay(10);
@@ -164,3 +117,118 @@ void radio_thread(void *arguments)
 /**********************************************************************************************************************
  * Private functions
  *********************************************************************************************************************/
+static bool radio_transmit_handler(void)
+{
+    uint8_t c = RADIO_TRANSMIT_TMO_MS;
+
+    nrf24l01_tx_status_t status = NRF24L01_TX_STATUS_LOST;
+
+    if(radio_packet_builder(radio_data_buffer, RADIO_PAYLAOD_SIZE) == false)
+    {
+        return false;
+    }
+    nrf24l01_transmit(radio_data_buffer);
+    while((c--))
+    {
+        osDelay(1);
+        status = nrf24l01_get_tx_status();
+        if(status != NRF24L01_TX_STATUS_SENDING)
+        {
+            break;
+        }
+    }
+
+    radio_data.tx_counter++;
+    radio_quality_check();
+
+    switch(status)
+    {
+        case NRF24L01_TX_STATUS_OK:
+            DEBUG_RADIO("Transmit: OK (%d/%d, %d %%).",
+                        radio_data.rtr_current, radio_data.rtr, radio_data.quality);
+            break;
+        case NRF24L01_TX_STATUS_LOST:
+            DEBUG_RADIO("Transmit: LOST (%d/%d, %d %%).",
+                        radio_data.rtr_current, radio_data.rtr, radio_data.quality);
+            radio_data.tx_lost_counter++;
+            break;
+        case NRF24L01_TX_STATUS_SENDING:
+            DEBUG_RADIO("Transmit: SENDING (%d/%d, %d %%).",
+                        radio_data.rtr_current, radio_data.rtr, radio_data.quality);
+            radio_data.tx_lost_counter++;
+            break;
+        default:
+            DEBUG_RADIO("Transmit: ERROR 0x%02X (%d/%d, %d %%).",
+                        status,
+                        radio_data.rtr_current, radio_data.rtr, radio_data.quality);
+            radio_data.tx_lost_counter++;
+            break;
+    }
+
+    return status == NRF24L01_TX_STATUS_OK ? true : false;
+}
+static bool radio_receive_handler(void)
+{
+    if(!nrf24l01_data_ready())
+    {
+        return false;
+    }
+
+    nrf24l01_get_data(radio_data_buffer);
+    DEBUG_RADIO("Received data:");
+    debug_send_hex_os(radio_data_buffer, RADIO_PAYLAOD_SIZE);
+    if(radio_packet_parser(radio_data_buffer, RADIO_PAYLAOD_SIZE) == false)
+    {
+        return false;
+    }
+
+    radio_data.rx_counter++;
+    return true;
+}
+static bool radio_packet_builder(uint8_t *packet, uint8_t size)
+{
+    if(packet == NULL || size ==0)
+    {
+        return false;
+    }
+
+    packet[0]++;
+
+    return true;
+}
+
+static bool radio_packet_parser(uint8_t *packet, uint8_t size)
+{
+    if(packet == NULL || size ==0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+
+static void radio_quality_check(void)
+{
+    uint8_t rtr = 0;
+    rtr = nrf24l01_get_retransmissions_count();
+
+    if(radio_data.tx_counter)
+    {
+        if(rtr <= 15)
+        {
+            radio_data.rtr_acumulator += rtr;
+        }
+    }
+    else
+    {
+        radio_data.rtr_acumulator = rtr;
+        radio_data.tx_counter = 1;
+    }
+
+    radio_data.rtr_current = rtr;
+    radio_data.rtr = (uint32_t)((float)radio_data.rtr_acumulator / (float)radio_data.tx_counter);
+    radio_data.quality = (uint32_t)(100.0 - ((float)radio_data.rtr * (100.0 / 15.0)));
+
+    return;
+}
