@@ -35,6 +35,8 @@
 #define ADC_TEMP_SENSOR_LLS_SLOPE   (-2.29) //!< Temperature sensor Linear-Least-Square slope (mV/degC).
 #define ADC_TEMP_SENSOR_LLS_0       (577.3) //!< Temperature sensor Linear-Least-Square slope LLS intercept at 0 degC.
 
+#define ADC_1_ENABLE                0
+
 /**********************************************************************************************************************
  * Private definitions and macros
  *********************************************************************************************************************/
@@ -66,8 +68,6 @@ adc_data_t adc_data[ADC_ID_LAST] =
     {.adc = LPC_ADC0, .ch = 0,   .port = 0xFF,   .pin = 0xFF,    .sw_pin = SWM_FIXED_ADC0_0, .value = 0, {0, 0, 0}},
     {.adc = LPC_ADC0, .ch = 2,   .port = 0,      .pin = 6,       .sw_pin = SWM_FIXED_ADC0_2, .value = 0, {0, 0, 0}},
     {.adc = LPC_ADC0, .ch = 3,   .port = 0,      .pin = 5,       .sw_pin = SWM_FIXED_ADC0_3, .value = 0, {0, 0, 0}},
-    {.adc = LPC_ADC1, .ch = 1,   .port = 0,      .pin = 9,       .sw_pin = SWM_FIXED_ADC1_1 , .value = 0, {0, 0, 0}},
-    {.adc = LPC_ADC1, .ch = 4,   .port = 1,      .pin = 2,       .sw_pin = SWM_FIXED_ADC1_4, .value = 0, {0, 0, 0}},
 };
 
 /**********************************************************************************************************************
@@ -78,7 +78,9 @@ adc_data_t adc_data[ADC_ID_LAST] =
  * Prototypes of local functions
  *********************************************************************************************************************/
 static void adc_0_init(void);
+#if ADC_1_ENABLE
 static void adc_1_init(void);
+#endif
 
 /**********************************************************************************************************************
  * Exported functions
@@ -86,17 +88,23 @@ static void adc_1_init(void);
 void adc_init(void)
 {
     adc_0_init();
+#if ADC_1_ENABLE
     adc_1_init();
+#endif
 
     return;
 }
 
 uint32_t adc_get_value_raw(adc_id_t id)
 {
+    if(id >= ADC_ID_LAST)
+    {
+        return UINT32_MAX;
+    }
 #if ADC_AVG_COUNT > 1
     return (adc_data[id].avg.value);
 #else
-    uint32_t value = adc_data[ch].value;
+    uint32_t value = adc_data[id].value;
 
     if(!(value & ADC_DR_OVERRUN) && (value & ADC_SEQ_GDAT_DATAVALID))
     {
@@ -109,7 +117,14 @@ uint32_t adc_get_value_raw(adc_id_t id)
 
 uint32_t adc_get_value_volt(adc_id_t id)
 {
-    uint32_t value = adc_get_value_raw(id);
+    uint32_t value = 0;
+
+    if(id >= ADC_ID_LAST)
+    {
+        return UINT32_MAX;
+    }
+
+    value = adc_get_value_raw(id);
 
     if(value != UINT32_MAX)
     {
@@ -237,6 +252,7 @@ void ADC0A_IRQHandler(void)
     return;
 }
 
+#if ADC_1_ENABLE
 static void adc_1_init(void)
 {
     uint8_t i = 0;
@@ -339,3 +355,5 @@ void ADC1A_IRQHandler(void)
 
     return;
 }
+#endif // ADC_1_ENABLE
+

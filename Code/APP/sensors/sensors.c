@@ -55,7 +55,7 @@ const osThreadAttr_t sensors_thread_attr =
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-/** Display thread ID. */
+/** Sensors thread ID. */
 osThreadId_t sensors_thread_id;
 filters_low_pass_t sensors_light_lp_filter = {0};
 volatile sensors_data_t sensors_data = {0};
@@ -85,7 +85,6 @@ bool sensors_init(void)
 
     return true;
 }
-
 
 void sensors_thread(void *arguments)
 {

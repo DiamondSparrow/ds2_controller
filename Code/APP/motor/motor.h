@@ -63,6 +63,7 @@ void motor_brake(motor_id_t motor);
 void motor_neutral(motor_id_t motor);
 void motor_test(motor_id_t motor, uint8_t ramp);
 void motor_test_ramp(motor_id_t motor, uint8_t ramp);
+void motor_test_all(void);
 
 int16_t motor_get_speed_target(motor_id_t motor);
 int16_t motor_get_speed_current(motor_id_t motor);

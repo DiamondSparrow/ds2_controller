@@ -60,14 +60,19 @@ uint8_t uart_0_tx_buffer[UART_0_TX_BUFFER_SIZE];
  *********************************************************************************************************************/
 void uart_0_init(void)
 {
+    // Enable the clock to the Switch Matrix.
+    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_SWM);
+
     /* Disables pullups/pulldowns and enable digitial mode */
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 13, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 18, (IOCON_MODE_INACT | IOCON_DIGMODE_EN));
 
     /* UART signal muxing via SWM */
-    Chip_Clock_EnablePeriphClock(SYSCTL_CLOCK_UART0);
     Chip_SWM_MovablePortPinAssign(SWM_UART0_RXD_I, 0, 13);
     Chip_SWM_MovablePortPinAssign(SWM_UART0_TXD_O, 0, 18);
+
+    // Disable the clock to the Switch Matrix to save power .
+    Chip_Clock_DisablePeriphClock(SYSCTL_CLOCK_SWM);
 
     /* Use main clock rate as base for UART baud rate divider */
     Chip_Clock_SetUARTBaseClockRate(Chip_Clock_GetMainClockRate(), false);

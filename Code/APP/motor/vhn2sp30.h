@@ -48,9 +48,9 @@ extern "C" {
  *********************************************************************************************************************/
 typedef struct
 {
-    gpio_t in_a;
-    gpio_t in_b;
-    gpio_t en;
+    gpio_id_t in_a;
+    gpio_id_t in_b;
+    gpio_id_t en;
     pwm_id_t pwm;
     adc_id_t cs;
 } vhn2sp30_t;

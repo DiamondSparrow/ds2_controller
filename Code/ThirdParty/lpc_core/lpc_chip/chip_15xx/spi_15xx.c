@@ -73,10 +73,10 @@ STATIC void SPI_Send_Dummy(LPC_SPI_T *pSPI,
 						   SPI_DATA_SETUP_T *pXfSetup)
 {
 	if (pXfSetup->RxCnt == (pXfSetup->Length - 1)) {
-		Chip_SPI_SendLastFrame(pSPI, 0x55, pXfSetup->DataSize, pXfSetup->ssel);
+		Chip_SPI_SendLastFrame(pSPI, 0xFF, pXfSetup->DataSize, pXfSetup->ssel);
 	}
 	else {
-		Chip_SPI_SendMidFrame(pSPI, 0x55);
+		Chip_SPI_SendMidFrame(pSPI, 0xFF);
 	}
 }
 

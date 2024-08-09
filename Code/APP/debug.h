@@ -32,15 +32,17 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define DEBUG_BUFFER_SIZE   255
+#define DEBUG_BUFFER_SIZE   512
 #define DEBUG_LOCK_TIMEOUT  1000
 
 /**********************************************************************************************************************
  * Exported definitions and macros
  *********************************************************************************************************************/
-#define DEBUG_BOOT(F, ...)  debug_send(F "\r\n", ##__VA_ARGS__)
-#define DEBUG_INIT(F, ...)  debug_send_os(F "\r\n", ##__VA_ARGS__)
-#define DEBUG(F, ...)       debug_send_os(F "\r\n", ##__VA_ARGS__)
+#define DEBUG_BOOT(F, ...)      debug_send(F "\r", ##__VA_ARGS__)
+#define DEBUG_INIT(F, ...)      debug_send_os(F "\r", ##__VA_ARGS__)
+#define DEBUG(F, ...)           debug_send_os(F "\r", ##__VA_ARGS__)
+#define DEBUG_RADIO(F, ...)     debug_send_os("[RADIO] " F "\r", ##__VA_ARGS__)
+#define DEBUG_DISPLAY(F, ...)   debug_send_os("[DISPLAY] " F "\r", ##__VA_ARGS__)
 
 /**********************************************************************************************************************
  * Exported types
@@ -56,6 +58,7 @@ extern "C" {
 bool debug_init(void);
 void debug_send(const char *fmt, ...);
 void debug_send_os(const char *fmt, ...);
+void debug_send_hex_os(uint8_t *buffer, uint16_t size);
 void debug_send_blocking(uint8_t *data, uint32_t size);
 
 #ifdef __cplusplus

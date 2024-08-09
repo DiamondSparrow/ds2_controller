@@ -21,13 +21,14 @@
  * Includes
  *********************************************************************************************************************/
 #include <stdint.h>
+#include <string.h>
 
 #include "nrf24l01.h"
 #include "periph/spi.h"
 #include "periph/gpio.h"
 
 /**********************************************************************************************************************
- * Private constants
+ * Private definitions and macros
  *********************************************************************************************************************/
 /** NRF24L01+ registers: */
 #define NRF24L01_REG_CONFIG         0x00    //!< Configuration register.
@@ -144,25 +145,22 @@
 #define NRF24L01_R_RX_PL_WID_MASK           0x60
 #define NRF24L01_NOP_MASK                   0xFF
 
-/**********************************************************************************************************************
- * Private definitions and macros
- *********************************************************************************************************************/
 /** Pins configuration */
-#define NRF24L01_CE_LOW             gpio_output_low(GPIO_NRF214L01_CE)
-#define NRF24L01_CE_HIGH            gpio_output_high(GPIO_NRF214L01_CE)
-#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_NRF214L01_CSN)
-#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_NRF214L01_CSN)
+#define NRF24L01_CE_LOW             gpio_output_low(GPIO_ID_NRF214L01_CE)
+#define NRF24L01_CE_HIGH            gpio_output_high(GPIO_ID_NRF214L01_CE)
+#define NRF24L01_CSN_LOW            gpio_output_low(GPIO_ID_NRF214L01_CSN)
+#define NRF24L01_CSN_HIGH           gpio_output_high(GPIO_ID_NRF214L01_CSN)
 
 /** Clear interrupt flags */
-#define NRF24L01_CLEAR_INTERRUPTS   do { nrf24l01_write_register(0x07, 0x70); } while (0)
+#define NRF24L01_CLEAR_INTERRUPTS   do { nrf24l01_write_register(NRF24L01_REG_STATUS, 0x70); } while (0)
 
 /** Gets interrupt status from device */
 #define NRF24L01_GET_INTERRUPTS     nrf24l01_get_status()
 
 /** Flush TX FIFO. */
-#define NRF24L01_FLUSH_TX           do { NRF24L01_CSN_LOW; spi_0_write_buffer((uint8_t *)NRF24L01_FLUSH_TX_MASK, 1); NRF24L01_CSN_HIGH; } while (0)
+#define NRF24L01_FLUSH_TX           do { NRF24L01_CSN_LOW; spi_0_write_buffer((uint8_t []){NRF24L01_FLUSH_TX_MASK}, 1); NRF24L01_CSN_HIGH; } while (0)
 /** Flush RX FIFO. */
-#define NRF24L01_FLUSH_RX           do { NRF24L01_CSN_LOW; spi_0_write_buffer((uint8_t *)NRF24L01_FLUSH_RX_MASK, 1); NRF24L01_CSN_HIGH; } while (0)
+#define NRF24L01_FLUSH_RX           do { NRF24L01_CSN_LOW; spi_0_write_buffer((uint8_t []){NRF24L01_FLUSH_RX_MASK}, 1); NRF24L01_CSN_HIGH; } while (0)
 
 
 /**********************************************************************************************************************
@@ -178,6 +176,11 @@ typedef struct
     nrf24l01_tx_power_t tx_power;   //!< Output power, see @ref nrf24l01_tx_power_t.
     nrf24l01_data_rate_t data_rate; //!< Data rate, see @ref nrf24l01_data_rate_t.
 } nrf24l01_cfg_t;
+
+
+/**********************************************************************************************************************
+ * Private constants
+ *********************************************************************************************************************/
 
 /**********************************************************************************************************************
  * Private variables
@@ -220,7 +223,7 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
     nrf24l01_config.payload_size    = payload_size;
     nrf24l01_config.tx_power        = NRF24L01_TX_POWER_0DBM;
     nrf24l01_config.data_rate       = NRF24L01_DATA_RATE_1M;
-
+    
     /* Reset nRF24L01+ to power on registers values */
     nrf24l01_software_reset();
 
@@ -270,7 +273,7 @@ uint8_t nrf24l01_init(uint8_t channel, uint8_t payload_size)
 void nrf24l01_set_my_address(uint8_t *addr)
 {
     NRF24L01_CE_LOW;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, addr, NRF24L01_ADDRESS_SIZE);
     NRF24L01_CE_HIGH;
 
     return;
@@ -278,8 +281,8 @@ void nrf24l01_set_my_address(uint8_t *addr)
 
 void nrf24l01_set_tx_address(uint8_t *addr)
 {
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, addr, 5);
-    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, addr, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, addr, NRF24L01_ADDRESS_SIZE);
+    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, addr, NRF24L01_ADDRESS_SIZE);
 
     return;
 }
@@ -293,7 +296,7 @@ uint8_t nrf24l01_get_retransmissions_count(void)
 void nrf24l01_power_up_tx(void)
 {
     NRF24L01_CLEAR_INTERRUPTS;
-    nrf24l01_write_register(NRF24L01_REG_CONFIG, NRF24L01_CONFIG | (0 << NRF24L01_PRIM_RX) | (1 << NRF24L01_PWR_UP));
+    nrf24l01_write_register(NRF24L01_REG_CONFIG, (NRF24L01_CONFIG | (0 << NRF24L01_PRIM_RX) | (1 << NRF24L01_PWR_UP)));
 
     return;
 }
@@ -307,7 +310,7 @@ void nrf24l01_power_up_rx(void)
     // Clear interrupts.
     NRF24L01_CLEAR_INTERRUPTS;
     // Setup RX mode.
-    nrf24l01_write_register(NRF24L01_REG_CONFIG, NRF24L01_CONFIG | 1 << NRF24L01_PWR_UP | 1 << NRF24L01_PRIM_RX);
+    nrf24l01_write_register(NRF24L01_REG_CONFIG, (NRF24L01_CONFIG | (1 << NRF24L01_PWR_UP) | (1 << NRF24L01_PRIM_RX)));
     // Start listening.
     NRF24L01_CE_HIGH;
 
@@ -326,12 +329,14 @@ nrf24l01_tx_status_t nrf24l01_get_tx_status(void)
 {
     uint8_t status = nrf24l01_get_status();
 
-    if(status & NRF24L01_TX_DS)
+    //DEBUG("Status: %02X", status);
+    
+    if((status & (1 << NRF24L01_TX_DS)))
     {
         // Successfully sent.
         return NRF24L01_TX_STATUS_OK;
     }
-    else if(status & NRF24L01_MAX_RT)
+    else if((status & (1 << NRF24L01_MAX_RT)))
     {
         // Message lost.
         return NRF24L01_TX_STATUS_LOST;
@@ -344,7 +349,11 @@ nrf24l01_tx_status_t nrf24l01_get_tx_status(void)
 void nrf24l01_transmit(uint8_t *data)
 {
     uint8_t count = nrf24l01_config.payload_size;
+    uint8_t buffer[33] = {0};
 
+    buffer[0] = NRF24L01_W_TX_PAYLOAD_MASK;
+    memcpy(&buffer[1], data, count);
+    
     /* Chip enable put to low, disable it */
     NRF24L01_CE_LOW;
 
@@ -357,9 +366,9 @@ void nrf24l01_transmit(uint8_t *data)
     /* Send payload to nRF24L01+ */
     NRF24L01_CSN_LOW;
     /* Send write payload command */
-    spi_0_write_buffer((uint8_t *)NRF24L01_W_TX_PAYLOAD_MASK, 1);
+    //spi_0_write_buffer((uint8_t []){NRF24L01_W_TX_PAYLOAD_MASK}, 1);
     /* Fill payload with data*/
-    spi_0_write_buffer(data, count);
+    spi_0_write_buffer(buffer, count + 1);
     /* Disable SPI */
     NRF24L01_CSN_HIGH;
 
@@ -373,7 +382,7 @@ uint8_t nrf24l01_data_ready(void)
 {
     uint8_t status = nrf24l01_get_status();
 
-    if(status & NRF24L01_RX_DR)
+    if((status & (1 << NRF24L01_RX_DR)))
     {
         return 1;
     }
@@ -387,7 +396,7 @@ void nrf24l01_get_data(uint8_t *data)
     NRF24L01_CSN_LOW;
 
     // Send read payload command.
-    spi_0_write_buffer((uint8_t *)NRF24L01_R_RX_PAYLOAD_MASK, 1);
+    spi_0_write_buffer((uint8_t []){NRF24L01_R_RX_PAYLOAD_MASK}, 1);
     // Read payload.
     spi_0_read_buffer(data, nrf24l01_config.payload_size);
     // Pull up chip select.
@@ -428,7 +437,6 @@ void nrf24l01_set_rf(nrf24l01_data_rate_t data_rate, nrf24l01_tx_power_t tx_powe
         tmp |= 1 << NRF24L01_RF_DR_LOW;
     }
     /* If 1Mbps, all bits set to 0 */
-
     if(tx_power == NRF24L01_TX_POWER_0DBM)
     {
         tmp |= 3 << NRF24L01_RF_PWR;
@@ -453,7 +461,7 @@ uint8_t nrf24l01_get_status(void)
 
     NRF24L01_CSN_LOW;
     /* First received byte is always status register */
-    spi_0_read_buffer((uint8_t *)status, 1);
+    spi_0_read_buffer((uint8_t *)&status, 1);
     /* Pull up chip select */
     NRF24L01_CSN_HIGH;
 
@@ -476,20 +484,24 @@ void nrf24l01_init_io(void)
 
 uint8_t nrf24l01_read_register(uint8_t reg)
 {
-    uint8_t value = 0;
+    uint8_t tx[1] = {0};
+    uint8_t rx[1] = {0};
+
+    tx[0] = NRF24L01_READ_REGISTER_MASK(reg);
 
     NRF24L01_CSN_LOW;
-    spi_0_write_buffer((uint8_t *)NRF24L01_READ_REGISTER_MASK(reg), 1);
-    spi_0_read_buffer((uint8_t *)value, 1);
+    spi_0_write_buffer(tx, 1);
+    spi_0_read_buffer(rx, 1);
     NRF24L01_CSN_HIGH;
 
-    return value;
+    return rx[0];
 }
 
 void nrf24l01_read_register_multi(uint8_t reg, uint8_t *data, uint8_t count)
 {
     NRF24L01_CSN_LOW;
-    spi_0_write_read((uint8_t *)NRF24L01_READ_REGISTER_MASK(reg), 1, data, count);
+    spi_0_write_buffer((uint8_t []){NRF24L01_READ_REGISTER_MASK(reg)}, 1);
+    spi_0_read_buffer(data, count);
     NRF24L01_CSN_HIGH;
 
     return;
@@ -512,9 +524,13 @@ uint8_t nrf24l01_read_bit(uint8_t reg, uint8_t bit)
 
 void nrf24l01_write_register(uint8_t reg, uint8_t value)
 {
+    uint8_t buff[2] = {0};
+
+    buff[0] = NRF24L01_WRITE_REGISTER_MASK(reg);
+    buff[1] = value;
+
     NRF24L01_CSN_LOW;
-    spi_0_write_buffer((uint8_t *)NRF24L01_WRITE_REGISTER_MASK(reg), 1);
-    spi_0_write_buffer((uint8_t *)value, 1);
+    spi_0_write_buffer((uint8_t *)buff, 2);
     NRF24L01_CSN_HIGH;
 
     return;
@@ -523,7 +539,7 @@ void nrf24l01_write_register(uint8_t reg, uint8_t value)
 void nrf24l01_write_register_multi(uint8_t reg, uint8_t *data, uint8_t count)
 {
     NRF24L01_CSN_LOW;
-    spi_0_write_buffer((uint8_t *)NRF24L01_WRITE_REGISTER_MASK(reg), 1);
+    spi_0_write_buffer((uint8_t []){NRF24L01_WRITE_REGISTER_MASK(reg)}, 1);
     spi_0_write_buffer((uint8_t *)data, count);
     NRF24L01_CSN_HIGH;
 
@@ -555,7 +571,7 @@ void nrf24l01_write_bit(uint8_t reg, uint8_t bit, uint8_t value)
 
 void nrf24l01_software_reset(void)
 {
-    uint8_t data[5] = {0};
+    uint8_t data[NRF24L01_ADDRESS_SIZE] = {0};
 
     nrf24l01_write_register(NRF24L01_REG_CONFIG,        NRF24L01_REG_DEFAULT_VAL_CONFIG);
     nrf24l01_write_register(NRF24L01_REG_EN_AA,         NRF24L01_REG_DEFAULT_VAL_EN_AA);
@@ -574,7 +590,7 @@ void nrf24l01_software_reset(void)
     data[2] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P0_2;
     data[3] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P0_3;
     data[4] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P0_4;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, data, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P0, data, NRF24L01_ADDRESS_SIZE);
 
     //P1
     data[0] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_0;
@@ -582,7 +598,7 @@ void nrf24l01_software_reset(void)
     data[2] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_2;
     data[3] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_3;
     data[4] = NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P1_4;
-    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, data, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_RX_ADDR_P1, data, NRF24L01_ADDRESS_SIZE);
 
     nrf24l01_write_register(NRF24L01_REG_RX_ADDR_P2,    NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P2);
     nrf24l01_write_register(NRF24L01_REG_RX_ADDR_P3,    NRF24L01_REG_DEFAULT_VAL_RX_ADDR_P3);
@@ -595,7 +611,7 @@ void nrf24l01_software_reset(void)
     data[2] = NRF24L01_REG_DEFAULT_VAL_TX_ADDR_2;
     data[3] = NRF24L01_REG_DEFAULT_VAL_TX_ADDR_3;
     data[4] = NRF24L01_REG_DEFAULT_VAL_TX_ADDR_4;
-    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, data, 5);
+    nrf24l01_write_register_multi(NRF24L01_REG_TX_ADDR, data, NRF24L01_ADDRESS_SIZE);
 
     nrf24l01_write_register(NRF24L01_REG_RX_PW_P0,      NRF24L01_REG_DEFAULT_VAL_RX_PW_P0);
     nrf24l01_write_register(NRF24L01_REG_RX_PW_P1,      NRF24L01_REG_DEFAULT_VAL_RX_PW_P1);
@@ -614,6 +630,6 @@ uint8_t nrf24l01_rx_fifo_empty(void)
 {
     uint8_t reg = nrf24l01_read_register(NRF24L01_REG_FIFO_STATUS);
 
-    return ((reg & NRF24L01_RX_EMPTY) ? 1 : 0);
+    return ((reg & (1 << NRF24L01_RX_EMPTY)) ? 1 : 0);
 }
 

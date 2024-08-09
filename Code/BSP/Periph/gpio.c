@@ -49,19 +49,15 @@ typedef struct
 /**********************************************************************************************************************
  * Private variables
  *********************************************************************************************************************/
-gpio_item_t gpio_list[GPIO_LAST] =
+const gpio_item_t gpio_list[GPIO_ID_LAST] =
 {
     {.port = 0, .pin =  25, .dir = true,  .state = true,},  // GPIO_LED_RED
     {.port = 0, .pin =  3,  .dir = true,  .state = true,},  // GPIO_LED_GREEN
     {.port = 1, .pin =  1,  .dir = true,  .state = true,},  // GPIO_LED_BLUE
-    {.port = 0, .pin =  2,  .dir = true,  .state = false,}, // GPIO_ULTRASONIC_1_TRIGER
-    {.port = 0, .pin =  30, .dir = false, .state = false,}, // GPIO_ULTRASONIC_1_ECHO
-    {.port = 0, .pin =  16, .dir = true,  .state = false,}, // GPIO_AM2301
-    {.port = 1, .pin =  9, .dir = false, .state = false,},  // GPIO_SW_JS
-    {.port = 1, .pin =  4, .dir = false, .state = false,},  // GPIO_SW_LEFT
-    {.port = 1, .pin =  5, .dir = false, .state = false,},  // GPIO_SW_RIGH
-    {.port = 0, .pin =  9,  .dir = true,  .state = true,},  // GPIO_NRF214L01_CE
-    {.port = 0, .pin =  27, .dir = true,  .state = true,},  // GPIO_NRF214L01_CSN
+    {.port = 1, .pin =  4,  .dir = false, .state = false,}, // GPIO_SW_LEFT
+    {.port = 1, .pin =  5,  .dir = false, .state = false,}, // GPIO_SW_RIGH
+    {.port = 1, .pin =  9,  .dir = true,  .state = true,},  // GPIO_NRF214L01_CE
+    {.port = 1, .pin =  2,  .dir = true,  .state = true,},  // GPIO_NRF214L01_CSN
     {.port = 0, .pin =  8,  .dir = true,  .state = false,}, // GPIO_MOTOR_LEFT_EN
     {.port = 0, .pin =  0,  .dir = true,  .state = false,}, // GPIO_MOTOR_LEFT_INA
     {.port = 0, .pin =  24, .dir = true,  .state = false,}, // GPIO_MOTOR_LEFT_INB
@@ -69,8 +65,8 @@ gpio_item_t gpio_list[GPIO_LAST] =
     {.port = 0, .pin =  10, .dir = true,  .state = false,}, // GPIO_MOTOR_RIGHT_INA
     {.port = 1, .pin =  0,  .dir = true,  .state = false,}, // GPIO_MOTOR_RIGHT_INB
     {.port = 1, .pin =  6,  .dir = true,  .state = true,},  // GPIO_DISPLAY_RESTART
-    {.port = 1, .pin =  7, .dir = true,  .state = true,},   // GPIO_DISPLAY_DC
-    {.port = 1, .pin =  8, .dir = true,  .state = true,},   // GPIO_DISPLAY_SELECT
+    {.port = 1, .pin =  7,  .dir = true,  .state = true,},  // GPIO_DISPLAY_DC
+    {.port = 1, .pin =  8,  .dir = true,  .state = true,},  // GPIO_DISPLAY_SELECT
 };
 /**********************************************************************************************************************
  * Exported variables
@@ -89,11 +85,10 @@ void gpio_init(void)
 
     Chip_GPIO_Init(LPC_GPIO);
 
-    Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 9, (IOCON_MODE_PULLUP | IOCON_HYS_EN | IOCON_S_MODE_0CLK));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 4, (IOCON_MODE_PULLUP | IOCON_HYS_EN | IOCON_S_MODE_0CLK));
     Chip_IOCON_PinMuxSet(LPC_IOCON, 1, 5, (IOCON_MODE_PULLUP | IOCON_HYS_EN | IOCON_S_MODE_0CLK));
 
-    for(i = 0; i < GPIO_LAST; i++)
+    for(i = 0; i < GPIO_ID_LAST; i++)
     {
         Chip_GPIO_SetPinDIR(LPC_GPIO, gpio_list[i].port, gpio_list[i].pin, gpio_list[i].dir);
         if(gpio_list[i].dir == true)
@@ -105,51 +100,86 @@ void gpio_init(void)
     return;
 }
 
-void gpio_output(gpio_t gpio)
+void gpio_output(gpio_id_t id)
 {
-    Chip_GPIO_SetPinDIROutput(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
+    if(id >= GPIO_ID_LAST)
+    {
+        return;
+    }
+
+    Chip_GPIO_SetPinDIROutput(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin);
 
     return;
 }
 
-void gpio_output_set(gpio_t gpio, bool state)
+void gpio_output_set(gpio_id_t id, bool state)
 {
-    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin, state);
+    if(id >= GPIO_ID_LAST)
+    {
+        return;
+    }
+
+    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin, state);
 
     return;
 }
 
-void gpio_output_low(gpio_t gpio)
+void gpio_output_low(gpio_id_t id)
 {
-    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin, false);
+    if(id >= GPIO_ID_LAST)
+    {
+        return;
+    }
+
+    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin, false);
 
     return;
 }
 
-void gpio_output_high(gpio_t gpio)
+void gpio_output_high(gpio_id_t id)
 {
-    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin, true);
+    if(id >= GPIO_ID_LAST)
+    {
+        return;
+    }
+
+    Chip_GPIO_SetPinState(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin, true);
 
     return;
 }
 
-void gpio_output_toggle(gpio_t gpio)
+void gpio_output_toggle(gpio_id_t id)
 {
-    Chip_GPIO_SetPinToggle(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
+    if(id >= GPIO_ID_LAST)
+    {
+        return;
+    }
+
+    Chip_GPIO_SetPinToggle(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin);
 
     return;
 }
 
-void gpio_input(gpio_t gpio)
+void gpio_input(gpio_id_t id)
 {
-    Chip_GPIO_SetPinDIRInput(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
+    if(id >= GPIO_ID_LAST)
+    {
+        return;
+    }
+
+    Chip_GPIO_SetPinDIRInput(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin);
 
     return;
 }
 
-bool gpio_input_get(gpio_t gpio)
+bool gpio_input_get(gpio_id_t id)
 {
-    return Chip_GPIO_ReadPortBit(LPC_GPIO, gpio_list[gpio].port, gpio_list[gpio].pin);
+    if(id >= GPIO_ID_LAST)
+    {
+        return false;
+    }
+
+    return Chip_GPIO_GetPinState(LPC_GPIO, gpio_list[id].port, gpio_list[id].pin);
 }
 
 /**********************************************************************************************************************

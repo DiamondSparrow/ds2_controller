@@ -33,7 +33,7 @@ extern "C" {
 /**********************************************************************************************************************
  * Exported constants
  *********************************************************************************************************************/
-#define CLI_CMD_COUNT       4  //!< Maximum count of commands in CLI.
+#define CLI_CMD_COUNT       5  //!< Maximum count of commands in CLI.
 
 /**********************************************************************************************************************
  * Exported definitions and macros
@@ -50,10 +50,11 @@ extern "C" {
 /**********************************************************************************************************************
  * Prototypes of exported functions
  *********************************************************************************************************************/
-bool cli_cmd_help_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_info_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_servo_cb(uint8_t *data, size_t size, const uint8_t *cmd);
-bool cli_cmd_pointer_cb(uint8_t *data, size_t size, const uint8_t *cmd);
+bool cli_cmd_cb_help(uint8_t *data, uint32_t size, const uint8_t *cmd);
+bool cli_cmd_cb_info(uint8_t *data, uint32_t size, const uint8_t *cmd);
+bool cli_cmd_cb_servo(uint8_t *data, uint32_t size, const uint8_t *cmd);
+bool cli_cmd_cb_pointer(uint8_t *data, uint32_t size, const uint8_t *cmd);
+bool cli_cmd_cb_os_info(uint8_t *data, uint32_t size, const uint8_t *cmd);
 
 #ifdef __cplusplus
 }

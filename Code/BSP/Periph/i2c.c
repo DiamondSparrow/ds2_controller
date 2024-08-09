@@ -108,7 +108,6 @@ void i2c_write_reg_multi(uint8_t addr, uint8_t reg, uint8_t *data, uint16_t size
     return;
 }
 
-
 bool i2c_tx_rx(uint8_t addr, uint8_t *tx_buff, uint16_t tx_size, uint8_t *rx_buff, uint16_t rx_size)
 {
     /* Setup I2C transfer record */
